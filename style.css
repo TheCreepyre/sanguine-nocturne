@@ -359,6 +359,9 @@ main p, .box p { margin: 6px 0; }
 @keyframes hop { 0%, 100% { transform: translateY(0) scaleY(1); } 50% { transform: translateY(-6px) scaleY(1.06); } }
 
 /* Stamps */
+.deco-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 18px; margin: 12px 0; }
+.deco-row img { display: block; max-width: 100%; height: auto; image-rendering: auto; }
+.deco-row img.rose { height: 150px; width: auto; }
 .stamp-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .stamp-row img { display: block; max-width: 100%; height: auto; image-rendering: pixelated; }
 
