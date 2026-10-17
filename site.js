@@ -25,7 +25,7 @@ function buildSidebar(el) {
         <div>
           <b class="name-small">Herr Myrden</b>
           <p class="online">          &#9679; mrrlem!</p>
-                    <p class="dim">"fear me not, as i fear myself"</p>
+                    <p class="dim">"do not fear me, as i fear myself more"</p>
         </div>
       </div>
       <p class="mood">Mood: <b>(tired)</b></p>
