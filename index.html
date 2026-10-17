@@ -279,19 +279,21 @@
 
     .dancer-track {
       display: flex;
-      gap: 14px;
       width: max-content;
-      padding-right: 14px;
+      will-change: transform;
       animation: cycle 9s linear infinite;
     }
 
     @keyframes cycle {
-      to { transform: translateX(-33.3333%); }
+      from { transform: translate3d(0, 0, 0); }
+      to { transform: translate3d(-33.3333%, 0, 0); }
     }
 
     .dancer-gif {
+      flex: none;
       width: auto;
       height: 40px;
+      margin-right: 14px;
       image-rendering: pixelated;
     }
 
