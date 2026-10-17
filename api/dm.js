@@ -19,7 +19,7 @@ export const GET = wrap(async (request) => {
       convos.map(async (c) => {
         const key = nameFromPath(c.pathname);
         const u = await loadUser(key);
-        return u && { name: u.name, color: u.color, avatar: u.avatar, at: c.at, unread: unreadSet.has(key) };
+        return u && { name: u.name, color: u.color, avatar: u.avatar, pfp: u.pfp || 0, at: c.at, unread: unreadSet.has(key) };
       })
     );
     return respond({ conversations: items.filter(Boolean).sort((a, b) => b.at - a.at) });

@@ -38,7 +38,7 @@ export const wrap = (fn) => async (request) => {
   }
 };
 
-export async function readJson(request) {
+export async function readJson(request, max = MAX_BODY) {
   const origin = request.headers.get("origin");
   const host = request.headers.get("host");
   if (origin && host) {
@@ -50,7 +50,7 @@ export async function readJson(request) {
   }
   if (!(request.headers.get("content-type") || "").includes("application/json")) fail(415, "Bad request");
   const raw = await request.text();
-  if (raw.length > MAX_BODY) fail(413, "Too long");
+  if (raw.length > max) fail(413, "Too long");
   try {
     const body = JSON.parse(raw);
     if (body && typeof body === "object") return body;
@@ -136,6 +136,7 @@ export const publicProfile = (u) => ({
   name: u.name,
   color: u.color,
   avatar: u.avatar,
+  pfp: u.pfp || 0,
   bio: u.bio || "",
   mood: u.mood || "",
   pronouns: u.pronouns || "",

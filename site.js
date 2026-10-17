@@ -6,8 +6,11 @@ const meReady = fetch("/api/auth?counts=1", { credentials: "same-origin" })
 const COLOR_OK = /^#[0-9a-f]{6}$/i;
 const USER_OK = /^[A-Za-z0-9_-]{3,20}$/;
 
-function avatarSrc(n) {
-  const i = Math.min(23, Math.max(1, parseInt(n, 10) || 1));
+function avatarSrc(a, pfp, name) {
+  // Accepts a user-like object ({avatar, pfp, name}) or a plain preset number.
+  if (a && typeof a === "object") ({ pfp, name, avatar: a } = { pfp: a.pfp, name: a.name, avatar: a.avatar });
+  if (pfp && USER_OK.test(name || "")) return "/api/avatar?u=" + encodeURIComponent(name.toLowerCase()) + "&v=" + pfp;
+  const i = Math.min(23, Math.max(1, parseInt(a, 10) || 1));
   return "assets/fx-" + String(i).padStart(2, "0") + ([15, 18, 19].includes(i) ? ".webp" : ".png");
 }
 
@@ -36,7 +39,7 @@ function fillAccountBox({ user, counts }) {
   }
   const head = el("div", "acct-head");
   const img = el("img", "acct-avatar");
-  img.src = avatarSrc(user.avatar);
+  img.src = avatarSrc(user);
   img.alt = "";
   head.append(img, nameTag(user.name, user.color, user.owner));
   const list = el("ul", "acct-links");

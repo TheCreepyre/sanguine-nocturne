@@ -7,7 +7,7 @@ import {
 const MAX_FRIENDS = 300;
 const stamp = () => ({ at: Date.now() });
 
-const card = (u) => ({ name: u.name, color: u.color, avatar: u.avatar, mood: u.mood || "" });
+const card = (u) => ({ name: u.name, color: u.color, avatar: u.avatar, pfp: u.pfp || 0, mood: u.mood || "" });
 async function cards(keys) {
   const users = await Promise.all(keys.map(loadUser));
   return users.filter(Boolean).map(card);

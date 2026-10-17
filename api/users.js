@@ -11,7 +11,7 @@ export const GET = wrap(async (request) => {
     const found = (await listBlobs(`users/${q}`)).slice(0, 30);
     const users = await Promise.all(found.map((b) => loadUser(b.pathname.slice(6, -5))));
     return respond({
-      users: users.filter(Boolean).map((u) => ({ name: u.name, color: u.color, avatar: u.avatar })),
+      users: users.filter(Boolean).map((u) => ({ name: u.name, color: u.color, avatar: u.avatar, pfp: u.pfp || 0 })),
     });
   }
 

@@ -60,7 +60,7 @@ function input(attrs = {}) {
 function memberRow(u, ...actions) {
   const row = el("div", "member");
   const img = el("img", "member-avatar");
-  img.src = avatarSrc(u.avatar);
+  img.src = avatarSrc(u);
   img.alt = "";
   const info = el("div", "member-info");
   info.append(nameTag(u.name, u.color));
@@ -129,9 +129,83 @@ function authForm(mode) {
   return form;
 }
 
+// Shrinks the chosen picture to 128x128 and re-encodes it, so only a clean small image is uploaded.
+function resizeImage(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const size = 128;
+      const canvas = document.createElement("canvas");
+      canvas.width = canvas.height = size;
+      const ctx = canvas.getContext("2d");
+      const s = Math.min(img.width, img.height);
+      ctx.drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, size, size);
+      const tryType = (type, quality, next) =>
+        canvas.toBlob((blob) => (blob && blob.type === type ? resolve(blob) : next()), type, quality);
+      tryType("image/webp", 0.85, () => tryType("image/png", undefined, () => reject(new Error("can't process that image"))));
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("that file isn't an image the browser can read"));
+    };
+    img.src = url;
+  });
+}
+
+function toBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result).split(",")[1]);
+    r.onerror = () => reject(new Error("couldn't read the image"));
+    r.readAsDataURL(blob);
+  });
+}
+
+function pfpControl(user) {
+  const wrap = el("div", "pfp-control");
+  const preview = el("img", "pfp-preview");
+  preview.src = avatarSrc(user);
+  preview.alt = "Your current picture";
+  const file = input({ type: "file", accept: "image/png,image/jpeg,image/webp,image/gif" });
+  const msg = notice();
+  file.addEventListener("change", async () => {
+    const chosen = file.files[0];
+    if (!chosen) return;
+    msg.textContent = "uploading...";
+    try {
+      if (chosen.size > 8 * 1024 * 1024) throw new Error("pick an image under 8 MB");
+      const blob = await resizeImage(chosen);
+      const { pfp } = await api("avatar", { type: blob.type, data: await toBase64(blob) });
+      user.pfp = pfp;
+      preview.src = avatarSrc(user);
+      msg.textContent = "picture updated.";
+    } catch (error) {
+      msg.textContent = error.message;
+    }
+    file.value = "";
+  });
+  const remove = button("Remove picture", async () => {
+    try {
+      await api("avatar", { remove: true });
+      user.pfp = 0;
+      preview.src = avatarSrc(user);
+      msg.textContent = "picture removed.";
+    } catch (error) {
+      msg.textContent = error.message;
+    }
+  });
+  const side = el("div", "stack");
+  side.append(file, remove, msg);
+  wrap.append(preview, side);
+  return wrap;
+}
+
 function accountEditor(user) {
   const msg = notice();
   let avatar = user.avatar;
+  let presetPicked = false;
   const grid = el("div", "avatar-grid");
   for (let n = 1; n <= 23; n++) {
     const b = el("button", "avatar-pick");
@@ -144,6 +218,7 @@ function accountEditor(user) {
     if (n === avatar) b.classList.add("on");
     b.addEventListener("click", () => {
       avatar = n;
+      presetPicked = true;
       grid.querySelectorAll(".on").forEach((x) => x.classList.remove("on"));
       b.classList.add("on");
     });
@@ -165,8 +240,8 @@ function accountEditor(user) {
   accentWrap.append(el("span", "", "Profile accent colour"), accent, defaultLabel);
 
   const form = el("form", "stack");
+  form.append(el("h3", "", "Profile picture"), pfpControl(user), el("p", "dim", "or pick a preset:"), grid);
   form.append(
-    el("h3", "", "Avatar"), grid,
     field("Name colour", color), accentWrap,
     field("Mood", mood), field("Pronouns", pronouns), field("Quote", quote), field("About me", bio)
   );
@@ -177,6 +252,10 @@ function accountEditor(user) {
     event.preventDefault();
     save.disabled = true;
     try {
+      if (presetPicked && user.pfp) {
+        await api("avatar", { remove: true });
+        user.pfp = 0;
+      }
       await api("auth", {
         action: "update", avatar, color: color.value, accent: noAccent.checked ? "" : accent.value,
         mood: mood.value, pronouns: pronouns.value, quote: quote.value, bio: bio.value,
@@ -256,7 +335,7 @@ async function initProfile(me) {
 
   const head = el("div", "char-head");
   const img = el("img", "photo");
-  img.src = avatarSrc(user.avatar);
+  img.src = avatarSrc(user);
   img.alt = "";
   const side = el("div");
   const title = el("h3", "profile-name");
