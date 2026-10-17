@@ -24,11 +24,11 @@ function buildSidebar(el) {
         <img class="photo" src="assets/pfp.jpg" alt="Herr Myrden profile picture">
         <div>
           <b class="name-small">Herr Myrden</b>
-          <p class="online">&#9679; ONLINE NOW!</p>
-          <p class="dim">"quote goes here"</p>
+          <p class="online">          &#9679; mrrlem!</p>
+                    <p class="dim">"fear me not, as i fear myself"</p>
         </div>
       </div>
-      <p class="mood">Mood: <b>(nocturnal)</b></p>
+      <p class="mood">Mood: <b>(tired)</b></p>
       <p class="small-links"><a href="about.html">about the artist</a></p>
     </div>
     <div class="box">
