@@ -42,7 +42,7 @@ function buildSidebar(el) {
     <div class="box extra">
       <h2>Stamps</h2>
       <div class="stamps">
-        ${Array.from({ length: 38 }, (_, i) => `<img src="assets/b-${String(i + 1).padStart(2, "0")}.png" alt="Stamp ${i + 1}">`).join("")}
+        ${Array.from({ length: 39 }, (_, i) => `<img src="assets/b-${String(i + 1).padStart(2, "0")}.png" alt="Stamp ${i + 1}">`).join("")}
         <a href="stamps.html">stamp wall</a>
       </div>
     </div>`;
