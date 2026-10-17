@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sanguine Nocturne - Under Construction</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --blood: #d51f50;
+      --pink: #ff72a5;
+      --cream: #fff1cf;
+      --night: #100b1b;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      padding: 24px;
+      color: var(--cream);
+      background-color: var(--night);
+      background-image:
+        radial-gradient(ellipse at 50% 0%, #39203d 0, transparent 55%),
+        radial-gradient(#7b4560 1px, transparent 1px);
+      background-size: auto, 18px 18px;
+      font-family: "Courier New", Courier, monospace;
+      text-align: center;
+    }
+
+    main {
+      width: min(100%, 720px);
+      margin: 4vh auto;
+      padding: 28px clamp(18px, 6vw, 54px) 34px;
+      border: 4px ridge var(--pink);
+      outline: 2px dotted var(--cream);
+      outline-offset: 6px;
+      background: rgba(16, 11, 27, 0.94);
+      box-shadow: 0 0 28px #d51f5055, 10px 10px 0 #000;
+    }
+
+    .eyebrow {
+      margin: 0;
+      color: var(--pink);
+      font-size: 0.85rem;
+      font-weight: bold;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 12px 0 4px;
+      color: #ffcc69;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(2.3rem, 9vw, 4.5rem);
+      font-style: italic;
+      text-shadow: 3px 3px 0 #a31744, 0 0 16px #ff72a588;
+    }
+
+    .divider {
+      margin: 20px 0;
+      color: var(--pink);
+      letter-spacing: 0.45em;
+    }
+
+    .construction {
+      display: inline-block;
+      margin: 12px 0 18px;
+      padding: 9px 16px;
+      border: 3px outset #ffe474;
+      color: #211308;
+      background: repeating-linear-gradient(
+        135deg,
+        #ffe474 0 12px,
+        #211308 12px 24px
+      );
+      font-weight: bold;
+      text-shadow: 1px 1px #ffe474;
+      animation: blink 1.2s steps(2, start) infinite;
+    }
+
+    @keyframes blink {
+      to { visibility: hidden; }
+    }
+
+    .message {
+      max-width: 480px;
+      margin: 8px auto 22px;
+      line-height: 1.7;
+    }
+
+    .moon {
+      margin: 18px 0;
+      color: var(--pink);
+      font-size: 3rem;
+      text-shadow: 0 0 18px var(--blood);
+    }
+
+    .links {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin: 22px 0;
+    }
+
+    .links a {
+      padding: 8px 12px;
+      border: 2px outset var(--pink);
+      color: var(--cream);
+      background: #55172f;
+      font-weight: bold;
+      text-decoration: none;
+    }
+
+    .links a:hover,
+    .links a:focus-visible {
+      color: var(--night);
+      background: var(--pink);
+    }
+
+    .counter {
+      display: inline-block;
+      margin-top: 10px;
+      padding: 5px 9px;
+      border: 2px inset #777;
+      color: #7cff87;
+      background: #050505;
+      font-size: 1.1rem;
+      letter-spacing: 0.16em;
+    }
+
+    footer {
+      margin-top: 24px;
+      color: #c4a9bd;
+      font-size: 0.78rem;
+      line-height: 1.7;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .construction {
+        animation: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <p class="eyebrow">Welcome to the dark side of the web</p>
+    <h1>Sanguine Nocturne</h1>
+    <div class="divider" aria-hidden="true">* * * * * * * * *</div>
+    <div class="construction">UNDER CONSTRUCTION</div>
+    <div class="moon" aria-hidden="true">&#9790;</div>
+    <p class="message">
+      This little corner of the night is being lovingly put together.
+      Please check back soon for more strange and wonderful things.
+    </p>
+    <div class="divider" aria-hidden="true">~ ~ ~ ~ ~ ~ ~ ~ ~</div>
+    <nav class="links" aria-label="Site links">
+      <a href="mailto:hello@sanguinenocturne.com">E-mail the webmaster</a>
+      <a href="#guestbook">Sign the guestbook</a>
+    </nav>
+    <span class="counter" aria-label="Visitor counter">000042</span>
+    <footer id="guestbook">
+      You are visitor #42. Be nice, stay strange.<br>
+      Best viewed after midnight, with the volume up.
+    </footer>
+  </main>
+</body>
+</html>
