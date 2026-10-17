@@ -3,172 +3,453 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Sanguine Nocturne - Under Construction</title>
+  <title>Sanguine Nocturne</title>
   <style>
     :root {
-      color-scheme: dark;
-      --blood: #d51f50;
-      --pink: #ff72a5;
-      --cream: #fff1cf;
-      --night: #100b1b;
+      --black: #0a0507;
+      --panel: #140a0d;
+      --panel-2: #1c0e12;
+      --blood: #9b111e;
+      --blood-bright: #d6203a;
+      --blood-dark: #4a0710;
+      --bone: #f3ece4;
+      --muted: #b59a9f;
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
-      min-height: 100vh;
       margin: 0;
-      padding: 24px;
-      color: var(--cream);
-      background-color: var(--night);
+      padding: 0;
+      color: var(--bone);
+      background-color: var(--black);
       background-image:
-        radial-gradient(ellipse at 50% 0%, #39203d 0, transparent 55%),
-        radial-gradient(#7b4560 1px, transparent 1px);
-      background-size: auto, 18px 18px;
+        radial-gradient(ellipse 60% 40% at 15% 100%, #9b111e26, transparent 70%),
+        radial-gradient(ellipse 50% 35% at 90% 60%, #9b111e1f, transparent 70%),
+        repeating-linear-gradient(45deg, transparent 0 14px, #ffffff05 14px 15px),
+        linear-gradient(180deg, #7a1226 0%, #4a0b18 18%, #1c060c 45%, #070204 75%, #000 100%);
+      background-attachment: fixed;
       font-family: "Courier New", Courier, monospace;
-      text-align: center;
+      font-size: 15px;
+      line-height: 1.65;
+    }
+
+    a { color: var(--blood-bright); }
+    a:hover { color: var(--bone); }
+
+    #container {
+      width: min(100%, 1000px);
+      margin: 0 auto;
+      padding: 0 14px 14px;
+    }
+
+    /* Header: thin black bar with a glossy blood-red bubble on the far left */
+    #topbar {
+      display: flex;
+      align-items: stretch;
+      justify-content: space-between;
+      gap: 12px;
+      width: 100%;
+      height: 46px;
+      margin-bottom: 14px;
+      padding: 0;
+      border-bottom: 0;
+      background:
+        linear-gradient(180deg, #ffffff0f 0, #ffffff05 40%, transparent 50%),
+        radial-gradient(ellipse 70% 100% at 50% 140%, #c8344a1f, transparent 70%),
+        linear-gradient(180deg, #2a0710, #4a0b18);
+      box-shadow: inset 0 -3px 6px #1a030833, inset 0 1px 2px #ffffff14;
+    }
+
+    /* Glossy blood-red bubbles that fill the bar from top to bottom */
+    .bubble {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      padding: 0 26px;
+      overflow: hidden;
+      border: 1px solid #4a0710;
+      border-radius: 999px;
+      color: var(--bone);
+      background:
+        radial-gradient(ellipse 70% 90% at 50% 130%, #c8344a88, transparent 70%),
+        linear-gradient(180deg, #b01a2c, var(--blood) 50%, #4f0710);
+      box-shadow:
+        inset 0 -4px 8px #3a050c,
+        inset 0 2px 3px #ffffff33,
+        0 0 8px #9b111e66;
+      font-family: Georgia, "Times New Roman", serif;
+      font-variant: small-caps;
+      text-decoration: none;
+      text-shadow: 1px 1px 2px #000;
+      white-space: nowrap;
+      animation: glow 5s ease-in-out infinite;
+    }
+
+    /* Soft specular highlight that makes it read as a bubble */
+    .bubble::before {
+      content: "";
+      position: absolute;
+      top: 3px;
+      left: 14px;
+      right: 14px;
+      height: 10px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, #ffffff66, #ffffff08);
+      pointer-events: none;
+    }
+
+    .bubble span { position: relative; }
+
+    #header {
+      font-size: 1.15rem;
+      letter-spacing: 0.14em;
+    }
+
+    #recruit {
+      min-width: 0;
+      font-size: 0.75rem;
+      letter-spacing: 0.06em;
+      animation-delay: -2.5s;
+    }
+
+    #recruit span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    a.bubble:hover,
+    a.bubble:focus-visible {
+      color: var(--bone);
+      filter: brightness(1.12);
+    }
+
+    @keyframes glow {
+      50% { box-shadow: inset 0 -4px 8px #3a050c, inset 0 2px 3px #ffffff33, 0 0 14px #9b111e99; }
+    }
+
+    #flex {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+    }
+
+    aside {
+      flex: 0 0 220px;
+      position: sticky;
+      top: 14px;
     }
 
     main {
-      width: min(100%, 720px);
-      margin: 4vh auto;
-      padding: 28px clamp(18px, 6vw, 54px) 34px;
-      border: 4px ridge var(--pink);
-      outline: 2px dotted var(--cream);
-      outline-offset: 6px;
-      background: rgba(16, 11, 27, 0.94);
-      box-shadow: 0 0 28px #d51f5055, 10px 10px 0 #000;
+      flex: 1;
+      min-width: 0;
     }
 
-    .eyebrow {
+    .box {
+      margin-bottom: 14px;
+      padding: 12px 14px;
+      border: 3px double var(--blood);
+      background:
+        linear-gradient(180deg, #ffffff0d 0, #ffffff04 35%, transparent 45%),
+        radial-gradient(ellipse 70% 40% at 50% 130%, #c8344a1a, transparent 70%),
+        var(--panel);
+      box-shadow: inset 0 -3px 6px #00000055, inset 0 1px 2px #ffffff12, 4px 4px 0 #000;
+    }
+
+    .box h2 {
+      margin: -12px -14px 12px;
+      padding: 4px 10px;
+      border-bottom: 1px solid var(--bone);
+      color: var(--bone);
+      background:
+        linear-gradient(180deg, #ffffff22 0, #ffffff08 45%, transparent 55%),
+        linear-gradient(180deg, var(--blood), var(--blood-dark));
+      box-shadow: inset 0 -3px 5px #00000044;
+      font-family: Georgia, serif;
+      font-size: 1rem;
+      font-variant: small-caps;
+      letter-spacing: 0.14em;
+      text-align: center;
+    }
+
+    main h3 {
+      margin: 18px 0 4px;
+      color: var(--blood-bright);
+      font-family: Georgia, serif;
+      font-variant: small-caps;
+      letter-spacing: 0.08em;
+    }
+
+    main h3::before { content: "\2726  "; color: var(--bone); }
+    main p { margin: 6px 0; }
+
+    section { scroll-margin-top: 14px; }
+
+    /* Left navigation */
+    nav ul {
       margin: 0;
-      color: var(--pink);
-      font-size: 0.85rem;
-      font-weight: bold;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
+      padding: 0;
+      list-style: none;
     }
 
-    h1 {
-      margin: 12px 0 4px;
-      color: #ffcc69;
-      font-family: Georgia, "Times New Roman", serif;
-      font-size: clamp(2.3rem, 9vw, 4.5rem);
-      font-style: italic;
-      text-shadow: 3px 3px 0 #a31744, 0 0 16px #ff72a588;
-    }
-
-    .divider {
-      margin: 20px 0;
-      color: var(--pink);
-      letter-spacing: 0.45em;
-    }
-
-    .construction {
-      display: inline-block;
-      margin: 12px 0 18px;
-      padding: 9px 16px;
-      border: 3px outset #ffe474;
-      color: #211308;
-      background: repeating-linear-gradient(
-        135deg,
-        #ffe474 0 12px,
-        #211308 12px 24px
-      );
-      font-weight: bold;
-      text-shadow: 1px 1px #ffe474;
-      animation: blink 1.2s steps(2, start) infinite;
-    }
-
-    @keyframes blink {
-      to { visibility: hidden; }
-    }
-
-    .message {
-      max-width: 480px;
-      margin: 8px auto 22px;
-      line-height: 1.7;
-    }
-
-    .moon {
-      margin: 18px 0;
-      color: var(--pink);
-      font-size: 3rem;
-      text-shadow: 0 0 18px var(--blood);
-    }
-
-    .links {
-      display: flex;
-      justify-content: center;
-      flex-wrap: wrap;
-      gap: 12px;
-      margin: 22px 0;
-    }
-
-    .links a {
-      padding: 8px 12px;
-      border: 2px outset var(--pink);
-      color: var(--cream);
-      background: #55172f;
-      font-weight: bold;
+    nav a,
+    nav summary {
+      display: block;
+      padding: 3px 8px;
+      border-left: 3px solid transparent;
+      color: var(--bone);
+      cursor: pointer;
       text-decoration: none;
     }
 
-    .links a:hover,
-    .links a:focus-visible {
-      color: var(--night);
-      background: var(--pink);
+    nav a:hover,
+    nav a:focus-visible,
+    nav summary:hover {
+      border-left-color: var(--bone);
+      color: var(--bone);
+      background: var(--blood-dark);
     }
+
+    nav summary {
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    nav details ul { margin: 2px 0 6px 12px; }
+    nav details a { font-size: 0.92em; color: var(--muted); }
+    nav details a::before { content: "\2022  "; color: var(--blood-bright); }
+
+    .hr {
+      margin: 14px 0;
+      color: var(--blood);
+      text-align: center;
+      letter-spacing: 0.35em;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+
+    .construction {
+      display: block;
+      padding: 6px;
+      border: 2px outset var(--bone);
+      color: var(--bone);
+      background:
+        linear-gradient(180deg, #ffffff22 0, #ffffff08 45%, transparent 55%),
+        repeating-linear-gradient(135deg, var(--blood) 0 12px, #000 12px 24px);
+      box-shadow: inset 0 -3px 5px #00000066;
+      font-weight: bold;
+      text-align: center;
+      text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000;
+      animation: blink 1.2s steps(2, start) infinite;
+    }
+
+    @keyframes blink { to { visibility: hidden; } }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+      gap: 10px;
+    }
+
+    .card {
+      padding: 10px;
+      border: 1px solid var(--bone);
+      background:
+        linear-gradient(180deg, #ffffff0d 0, #ffffff04 35%, transparent 45%),
+        var(--panel-2);
+      box-shadow: inset 0 -3px 6px #00000055, inset 0 1px 2px #ffffff12;
+    }
+
+    .card .portrait {
+      display: grid;
+      place-items: center;
+      height: 110px;
+      margin-bottom: 8px;
+      border: 2px inset var(--blood);
+      color: var(--blood);
+      background:
+        linear-gradient(180deg, #ffffff0f 0, #ffffff04 35%, transparent 45%),
+        #000;
+      font-size: 2.2rem;
+    }
+
+    .card b { color: var(--blood-bright); }
 
     .counter {
-      display: inline-block;
-      margin-top: 10px;
-      padding: 5px 9px;
-      border: 2px inset #777;
-      color: #7cff87;
-      background: #050505;
-      font-size: 1.1rem;
-      letter-spacing: 0.16em;
+      display: block;
+      padding: 4px;
+      border: 2px inset #555;
+      color: var(--blood-bright);
+      background:
+        linear-gradient(180deg, #ffffff10 0, #ffffff04 40%, transparent 50%),
+        #000;
+      font-size: 1.2rem;
+      letter-spacing: 0.2em;
+      text-align: center;
     }
 
+    .changelog { margin: 0; padding-left: 18px; font-size: 0.92em; }
+
     footer {
-      margin-top: 24px;
-      color: #c4a9bd;
-      font-size: 0.78rem;
-      line-height: 1.7;
+      padding: 10px;
+      color: var(--muted);
+      font-size: 0.8rem;
+      text-align: center;
+    }
+
+    @media (max-width: 720px) {
+      #flex { flex-direction: column; }
+      aside { position: static; flex-basis: auto; width: 100%; }
     }
 
     @media (prefers-reduced-motion: reduce) {
-      .construction {
-        animation: none;
-      }
+      .construction, .bubble { animation: none; }
+      html { scroll-behavior: auto; }
     }
+
+    html { scroll-behavior: smooth; }
   </style>
 </head>
 <body>
-  <main>
-    <p class="eyebrow">Welcome to the dark side of the web</p>
-    <h1>Sanguine Nocturne</h1>
-    <div class="divider" aria-hidden="true">* * * * * * * * *</div>
-    <div class="construction">UNDER CONSTRUCTION</div>
-    <div class="moon" aria-hidden="true">&#9790;</div>
-    <p class="message">
-      This little corner of the night is being lovingly put together.
-      Please check back soon for more strange and wonderful things.
-    </p>
-    <div class="divider" aria-hidden="true">~ ~ ~ ~ ~ ~ ~ ~ ~</div>
-    <nav class="links" aria-label="Site links">
-      <a href="mailto:hello@sanguinenocturne.com">E-mail the webmaster</a>
-      <a href="#guestbook">Sign the guestbook</a>
-    </nav>
-    <span class="counter" id="counter" aria-label="Visitor counter">------</span>
-    <footer id="guestbook">
-      You are visitor <span id="visitor-number">#?</span>. Be nice, stay strange.<br>
-      Best viewed after midnight, with the volume up.
-    </footer>
-  </main>
+  <div id="topbar">
+    <a id="header" class="bubble" href="#home"><span>Sanguine Nocturne</span></a>
+    <a id="recruit" class="bubble" href="#links"><span>sanguine wants you! have what it takes?</span></a>
+  </div>
+
+  <div id="container">
+    <div id="flex">
+      <aside>
+        <div class="box">
+          <h2>Navigation</h2>
+          <nav aria-label="Main">
+            <ul>
+              <li><a href="#home">Home</a></li>
+              <li>
+                <details open>
+                  <summary>Lore</summary>
+                  <ul>
+                    <li><a href="#lore-origins">Origins</a></li>
+                    <li><a href="#lore-blood-moon">The Blood Moon</a></li>
+                    <li><a href="#lore-covens">Covens &amp; Houses</a></li>
+                    <li><a href="#lore-timeline">Timeline</a></li>
+                  </ul>
+                </details>
+              </li>
+              <li>
+                <details open>
+                  <summary>Characters</summary>
+                  <ul>
+                    <li><a href="#characters-main">Main Cast</a></li>
+                    <li><a href="#characters-villains">Villains</a></li>
+                    <li><a href="#characters-npcs">Allies &amp; NPCs</a></li>
+                  </ul>
+                </details>
+              </li>
+              <li>
+                <details>
+                  <summary>World</summary>
+                  <ul>
+                    <li><a href="#world-places">Places</a></li>
+                    <li><a href="#world-bestiary">Bestiary</a></li>
+                  </ul>
+                </details>
+              </li>
+              <li><a href="#gallery">Gallery</a></li>
+              <li><a href="#links">Links</a></li>
+            </ul>
+          </nav>
+        </div>
+
+        <div class="box">
+          <h2>Visitors</h2>
+          <span class="counter" id="counter" aria-label="Visitor counter">------</span>
+        </div>
+
+        <div class="construction">UNDER CONSTRUCTION</div>
+      </aside>
+
+      <main>
+        <section id="home" class="box">
+          <h2>Welcome, Night Wanderer</h2>
+          <p>
+            You have found the archive of <b>Sanguine Nocturne</b>: a collection of
+            lore, characters and strange places born after dark. Pull up a coffin and stay a while.
+          </p>
+          <p>
+            You are visitor <b id="visitor-number">#?</b>. Best viewed after midnight.
+          </p>
+          <div class="hr" aria-hidden="true">&#10016; &#10016; &#10016; &#10016; &#10016; &#10016;</div>
+          <p>Last update: <b>17 Oct 2026</b></p>
+          <ul class="changelog">
+            <li>17/10/26 - the archive opens its doors. Real visitor counter installed.</li>
+          </ul>
+        </section>
+
+        <section id="lore" class="box">
+          <h2>Lore</h2>
+          <h3 id="lore-origins">Origins</h3>
+          <p>Placeholder: tell the tale of how the first blood was spilled and the first night began.</p>
+          <h3 id="lore-blood-moon">The Blood Moon</h3>
+          <p>Placeholder: the crimson moon, what it means, and what happens when it rises.</p>
+          <h3 id="lore-covens">Covens &amp; Houses</h3>
+          <p>Placeholder: the great families, their sigils, and who owes whom a debt.</p>
+          <h3 id="lore-timeline">Timeline</h3>
+          <p>Placeholder: a list of the ages, from the first dusk to the present midnight.</p>
+        </section>
+
+        <section id="characters" class="box">
+          <h2>Characters</h2>
+
+          <h3 id="characters-main">Main Cast</h3>
+          <div class="cards">
+            <div class="card">
+              <div class="portrait" aria-hidden="true">&#9790;</div>
+              <b>Character Name</b><br>Role &middot; Age &middot; Clan
+            </div>
+            <div class="card">
+              <div class="portrait" aria-hidden="true">&#10016;</div>
+              <b>Character Name</b><br>Role &middot; Age &middot; Clan
+            </div>
+          </div>
+
+          <h3 id="characters-villains">Villains</h3>
+          <div class="cards">
+            <div class="card">
+              <div class="portrait" aria-hidden="true">&#9760;</div>
+              <b>Character Name</b><br>Role &middot; Age &middot; Clan
+            </div>
+          </div>
+
+          <h3 id="characters-npcs">Allies &amp; NPCs</h3>
+          <p>Placeholder: the supporting cast, the barkeeps, the informants, the one who always knows too much.</p>
+        </section>
+
+        <section id="world" class="box">
+          <h2>World</h2>
+          <h3 id="world-places">Places</h3>
+          <p>Placeholder: cities, crypts, castles and the roads between them.</p>
+          <h3 id="world-bestiary">Bestiary</h3>
+          <p>Placeholder: creatures of the night and how to survive them.</p>
+        </section>
+
+        <section id="gallery" class="box">
+          <h2>Gallery</h2>
+          <p>Art, references and moodboards will live here soon.</p>
+        </section>
+
+        <section id="links" class="box">
+          <h2>Links</h2>
+          <p><a href="mailto:hello@sanguinenocturne.com">E-mail the webmaster</a></p>
+        </section>
+
+        <footer>
+          &copy; Sanguine Nocturne &middot; Stay strange. Stay out past dark.
+        </footer>
+      </main>
+    </div>
+  </div>
+
   <script>
     (async () => {
       const counter = document.getElementById("counter");
