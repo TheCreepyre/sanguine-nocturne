@@ -348,9 +348,14 @@
     }
 
     @media (max-width: 720px) {
-      #flex { flex-direction: column; }
-      aside { position: static; flex-basis: auto; width: 100%; }
-      .stamps-side { flex: 0 0 auto; }
+      #flex { flex-direction: row; flex-wrap: wrap; gap: 8px; }
+      aside { position: static; flex: 0 0 100%; width: 100%; }
+      .stamps-side { flex: 0 0 56px; width: 56px; position: sticky; top: 8px; }
+      .stamps-box { padding: 4px; }
+      .stamps-box h2 { display: none; }
+      .stamps { flex-direction: column; flex-wrap: nowrap; gap: 6px; }
+      .stamps img { width: 100%; max-width: none; }
+      .box { margin-bottom: 10px; }
 
       #topbar { height: auto; min-height: 46px; gap: 6px; }
 
@@ -428,7 +433,7 @@
                 </details>
               </li>
               <li><a href="#gallery">Gallery</a></li>
-              <li><a href="#links">Links</a></li>
+              <li><a href="#links">Contact</a></li>
             </ul>
           </nav>
         </div>
@@ -479,31 +484,26 @@
 
       <main>
         <section id="home" class="box">
-          <h2>Welcome, Night Wanderer</h2>
-          <p>
-            You have found the archive of <b>Sanguine Nocturne</b>: a collection of
-            lore, characters and strange places born after dark. Pull up a coffin and stay a while.
-          </p>
-          <p>
-            You are visitor <b id="visitor-number">#?</b>. Best viewed after midnight.
-          </p>
+          <h2>Welcome</h2>
+          <p>nothing here yet. the walls are still wet.</p>
+          <p>you're visitor <b id="visitor-number">#?</b>.</p>
           <div class="hr" aria-hidden="true">&#10016; &#10016; &#10016; &#10016; &#10016; &#10016;</div>
-          <p>Last update: <b>17 Oct 2026</b></p>
+          <p>last updated: <b>17 Oct 2026</b></p>
           <ul class="changelog">
-            <li>17/10/26 - the archive opens its doors. Real visitor counter installed.</li>
+            <li>17/10/26 - site exists now</li>
           </ul>
         </section>
 
         <section id="lore" class="box">
           <h2>Lore</h2>
           <h3 id="lore-origins">Origins</h3>
-          <p>Placeholder: tell the tale of how the first blood was spilled and the first night began.</p>
+          <p>nothing here yet. the lore is still asleep.</p>
           <h3 id="lore-blood-moon">The Blood Moon</h3>
-          <p>Placeholder: the crimson moon, what it means, and what happens when it rises.</p>
+          <p>nothing here yet.</p>
           <h3 id="lore-covens">Covens &amp; Houses</h3>
-          <p>Placeholder: the great families, their sigils, and who owes whom a debt.</p>
+          <p>nothing here yet.</p>
           <h3 id="lore-timeline">Timeline</h3>
-          <p>Placeholder: a list of the ages, from the first dusk to the present midnight.</p>
+          <p>nothing here yet.</p>
         </section>
 
         <section id="characters" class="box">
@@ -513,11 +513,11 @@
           <div class="cards">
             <div class="card">
               <div class="portrait" aria-hidden="true">&#9790;</div>
-              <b>Character Name</b><br>Role &middot; Age &middot; Clan
+              <b>name</b><br>role &middot; age
             </div>
             <div class="card">
               <div class="portrait" aria-hidden="true">&#10016;</div>
-              <b>Character Name</b><br>Role &middot; Age &middot; Clan
+              <b>name</b><br>role &middot; age
             </div>
           </div>
 
@@ -525,34 +525,34 @@
           <div class="cards">
             <div class="card">
               <div class="portrait" aria-hidden="true">&#9760;</div>
-              <b>Character Name</b><br>Role &middot; Age &middot; Clan
+              <b>name</b><br>role &middot; age
             </div>
           </div>
 
           <h3 id="characters-npcs">Allies &amp; NPCs</h3>
-          <p>Placeholder: the supporting cast, the barkeeps, the informants, the one who always knows too much.</p>
+          <p>nothing here yet. no one has been let in.</p>
         </section>
 
         <section id="world" class="box">
           <h2>World</h2>
           <h3 id="world-places">Places</h3>
-          <p>Placeholder: cities, crypts, castles and the roads between them.</p>
+          <p>nothing here yet.</p>
           <h3 id="world-bestiary">Bestiary</h3>
-          <p>Placeholder: creatures of the night and how to survive them.</p>
+          <p>nothing here yet.</p>
         </section>
 
         <section id="gallery" class="box">
           <h2>Gallery</h2>
-          <p>Art, references and moodboards will live here soon.</p>
+          <p>nothing here yet. it's dark in here.</p>
         </section>
 
         <section id="links" class="box">
-          <h2>Links</h2>
-          <p><a href="mailto:hello@sanguinenocturne.com">E-mail the webmaster</a></p>
+          <h2>Contact</h2>
+          <p><a href="mailto:hello@sanguinenocturne.com">email me</a></p>
         </section>
 
         <footer>
-          &copy; Sanguine Nocturne &middot; Stay strange. Stay out past dark.
+          &copy; sanguine nocturne
         </footer>
       </main>
 
@@ -572,6 +572,11 @@
   </div>
 
   <script>
+    // On phones the nav starts collapsed so the content isn't buried under it.
+    if (matchMedia("(max-width: 720px)").matches) {
+      document.querySelectorAll("nav details").forEach((d) => d.removeAttribute("open"));
+    }
+
     (async () => {
       const counter = document.getElementById("counter");
       const label = document.getElementById("visitor-number");
