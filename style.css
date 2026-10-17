@@ -559,7 +559,6 @@ details.talk .thread { padding: 8px 10px; }
 
   .profile { flex-direction: column; gap: 0; }
   .col-left, .col-right { flex: 0 0 auto; width: 100%; }
-  .col-left .extra { display: none; }
 
   #topbar { flex-wrap: wrap; justify-content: center; padding: 6px 10px; }
   #header { font-size: 1.8rem; }
