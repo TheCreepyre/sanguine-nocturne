@@ -43,6 +43,6 @@ export async function POST() {
     return respond({ count: await countVisits() });
   } catch (error) {
     console.error(error);
-    return respond({ error: "Could not record visit" }, 500);
+    return respond({ error: "Could not record visit", detail: String(error?.message) }, 500);
   }
 }
