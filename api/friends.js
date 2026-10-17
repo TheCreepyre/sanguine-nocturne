@@ -48,6 +48,7 @@ export const POST = wrap(async (request) => {
         await makeFriends(me, other);
         return respond({ relation: "friend" });
       }
+      if (target.settings?.noRequests) fail(403, "They aren't accepting friend requests");
       if ((await relations(me)).friend.length >= MAX_FRIENDS) fail(400, "Friend list is full");
       await Promise.all([putJson(`rel/${me}/out-${other}.json`, stamp()), putJson(`rel/${other}/in-${me}.json`, stamp())]);
       return respond({ relation: "out" });

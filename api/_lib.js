@@ -125,7 +125,7 @@ export async function getViewer(request) {
   const session = await getJson(`sessions/${tokenHash(token)}.json`);
   if (!session || !session.user || session.exp < Date.now()) return null;
   const user = await getJson(`users/${session.user}.json`);
-  return user ? { ...user, key: session.user } : null;
+  return user && !user.banned ? { ...user, key: session.user } : null;
 }
 
 export async function requireViewer(request) {

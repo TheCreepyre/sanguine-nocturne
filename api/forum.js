@@ -11,7 +11,8 @@ const BOARDS = [
 ];
 const BOARD_IDS = new Set(BOARDS.map((b) => b[0]));
 const ID_RE = /^\d{13}-[a-z0-9]{6}$/;
-const LIST_LIMIT = 40;
+const LIST_LIMIT = 25;
+const RECENT_REPLIES = 3;
 const REPLY_LIMIT = 200;
 
 const newId = () => `${String(Date.now()).padStart(13, "0")}-${Math.random().toString(36).slice(2, 8).padEnd(6, "0")}`;
@@ -38,14 +39,25 @@ export const GET = wrap(async (request) => {
     return respond({ boards: BOARDS.map(([id, name, desc], i) => ({ id, name, desc, threads: counts[i] })) });
   }
 
-  const b = board(params.get("board"));
+  const wantAll = params.get("board") === "all";
+  const b = wantAll ? "all" : board(params.get("board"));
   if (!params.has("thread")) {
-    const items = (await listBlobs(`threads/${b}/`)).slice(-LIST_LIMIT).reverse();
-    const threads = (await Promise.all(items.map((i) => getJson(i.pathname).catch(() => null)))).filter(Boolean);
-    const withCounts = await Promise.all(
-      threads.map(async (t) => ({ ...view(t), text: undefined, replies: (await listBlobs(`replies/${t.id}/`)).length }))
+    const ids = wantAll ? BOARDS.map((x) => x[0]) : [b];
+    const found = (await Promise.all(ids.map(async (id) => (await listBlobs(`threads/${id}/`)).map((i) => ({ ...i, id }))))).flat();
+    const key = (i) => i.pathname.split("/").pop();
+    const items = found.sort((x, y) => (key(x) < key(y) ? 1 : -1)).slice(0, LIST_LIMIT);
+    const threads = (await Promise.all(items.map((i) => getJson(i.pathname).catch(() => null).then((t) => t && { ...t, board: i.id })))).filter(Boolean);
+    const withReplies = await Promise.all(
+      threads.map(async (t) => {
+        const rs = await listBlobs(`replies/${t.id}/`);
+        const recent = (await Promise.all(rs.slice(-RECENT_REPLIES).map((r) => getJson(r.pathname).catch(() => null)))).filter(Boolean);
+        return {
+          ...view(t), board: t.board, authorKey: t.userKey, replies: rs.length,
+          recent: recent.map((r) => ({ ...view(r), authorKey: r.userKey })),
+        };
+      })
     );
-    return respond({ board: b, threads: withCounts, me: can });
+    return respond({ board: b, threads: withReplies, me: can });
   }
 
   const id = threadId(params.get("thread"));

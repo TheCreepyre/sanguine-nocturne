@@ -298,9 +298,161 @@ function accountEditor(user) {
   return [box("Edit profile", form), box("Password", pwForm), box("", out)];
 }
 
+const PREF_KEY = "sn_prefs";
+const readPrefs = () => {
+  try {
+    return JSON.parse(localStorage.getItem(PREF_KEY)) || {};
+  } catch {
+    return {};
+  }
+};
+
+function checkbox(label, checked, onChange) {
+  const wrap = el("label", "inline");
+  const c = input({ type: "checkbox", checked });
+  c.addEventListener("change", () => onChange(c.checked));
+  wrap.append(c, " " + label);
+  return wrap;
+}
+
+function settingsBox(user) {
+  const msg = notice();
+  const s = { noRequests: Boolean(user.settings?.noRequests), hidden: Boolean(user.settings?.hidden) };
+  const save = async () => {
+    try {
+      await api("auth", { action: "update", settings: s });
+      msg.textContent = "saved.";
+    } catch (error) {
+      msg.textContent = error.message;
+    }
+  };
+  const prefs = readPrefs();
+  const setPref = (key, value) => {
+    prefs[key] = value;
+    localStorage.setItem(PREF_KEY, JSON.stringify(prefs));
+    applyPrefs();
+  };
+  const size = el("select");
+  for (const [v, l] of [["", "normal"], ["large", "large"], ["xlarge", "extra large"]]) size.append(new Option(l, v, false, (prefs.size || "") === v));
+  size.addEventListener("change", () => setPref("size", size.value));
+
+  const wrap = el("div", "stack");
+  wrap.append(
+    el("h3", "", "Privacy"),
+    checkbox("don't let people find me in search", s.hidden, (v) => ((s.hidden = v), save())),
+    checkbox("don't accept new friend requests", s.noRequests, (v) => ((s.noRequests = v), save())),
+    el("h3", "", "On this device"),
+    field("Text size", size),
+    checkbox("calm mode (stop the scrolling strip and ticker)", Boolean(prefs.calm), (v) => setPref("calm", v)),
+    checkbox("hide the stamps in the sidebar", Boolean(prefs.nostamps), (v) => setPref("nostamps", v)),
+    msg
+  );
+  return box("Settings", wrap);
+}
+
+function dangerBox() {
+  const msg = notice();
+  const pw = input({ type: "password", autocomplete: "current-password", placeholder: "your password" });
+  const go = button("Delete my account", async () => {
+    if (!confirm("Delete your account for good? Your forum posts stay, but your profile, friends list and login are gone.")) return;
+    try {
+      await api("auth", { action: "deleteAccount", password: pw.value });
+      location.href = "index.html";
+    } catch (error) {
+      msg.textContent = error.message;
+    }
+  });
+  return box("Delete account", el("p", "dim", "this can't be undone."), field("Confirm with password", pw), go, msg);
+}
+
+// Owner-only: lives on the account page, every call is re-checked on the server.
+function ownerPanel() {
+  const holder = box("Owner panel");
+  const list = el("div", "stack");
+  const msg = notice();
+  const filter = input({ placeholder: "filter by name" });
+  let users = [];
+
+  const act = async (body) => {
+    try {
+      await api("admin", body);
+      await load();
+    } catch (error) {
+      msg.textContent = error.message;
+    }
+  };
+
+  const editor = (u) => {
+    const form = el("form", "stack");
+    const f = {
+      mood: input({ value: u.mood, maxLength: 30 }), pronouns: input({ value: u.pronouns, maxLength: 30 }),
+      quote: input({ value: u.quote, maxLength: 120 }), color: input({ type: "color", value: u.color }),
+      newPassword: input({ type: "text", placeholder: "leave empty to keep", maxLength: 100 }),
+    };
+    const bio = el("textarea");
+    bio.rows = 3;
+    bio.maxLength = 500;
+    bio.value = u.bio;
+    const rm = input({ type: "checkbox" });
+    const rmLabel = el("label", "inline");
+    rmLabel.append(rm, " remove their uploaded picture");
+    form.append(field("Mood", f.mood), field("Pronouns", f.pronouns), field("Quote", f.quote), field("Bio", bio),
+      field("Name colour", f.color), field("Set new password", f.newPassword), rmLabel);
+    const go = el("button", "pill", "Save changes");
+    go.type = "submit";
+    form.append(go);
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const body = { action: "edit", name: u.name, mood: f.mood.value, pronouns: f.pronouns.value, quote: f.quote.value, bio: bio.value, color: f.color.value, removePfp: rm.checked };
+      if (f.newPassword.value) body.newPassword = f.newPassword.value;
+      act(body);
+    });
+    return form;
+  };
+
+  const render = () => {
+    const q = filter.value.trim().toLowerCase();
+    list.replaceChildren(
+      ...users.filter((u) => u.name.toLowerCase().includes(q)).map((u) => {
+        const actions = [Object.assign(el("a", "pill", "Profile"), { href: "profile.html?u=" + encodeURIComponent(u.name) })];
+        const details = el("details");
+        details.append(el("summary", "", "edit"), editor(u));
+        if (!u.owner) {
+          actions.push(button(u.banned ? "Unban" : "Ban", () => act({ action: u.banned ? "unban" : "ban", name: u.name })));
+          actions.push(button("Delete", async () => {
+            if (confirm(`Delete ${u.name}'s account for good?`)) await act({ action: "delete", name: u.name });
+          }));
+        }
+        const row = memberRow(u, ...actions);
+        if (u.banned) row.querySelector(".member-info").append(el("span", "dim", " [banned]"));
+        const wrap = el("div");
+        wrap.append(row);
+        if (!u.owner) wrap.append(details);
+        return wrap;
+      })
+    );
+  };
+
+  async function load() {
+    try {
+      users = (await api("admin")).users;
+      msg.textContent = users.length + " accounts";
+      render();
+    } catch (error) {
+      msg.textContent = error.message;
+    }
+  }
+  filter.addEventListener("input", render);
+  holder.append(el("p", "dim", "see, edit, ban or delete any account. only you can see this."), filter, msg, list);
+  load();
+  return holder;
+}
+
 async function initAccount(me) {
   if (me.user) {
-    app.replaceChildren(...accountEditor(me.user));
+    const boxes = [...accountEditor(me.user), settingsBox(me.user)];
+    boxes.push(me.user.owner ? ownerPanel() : dangerBox());
+    app.replaceChildren(...boxes);
     return;
   }
   const join = params.has("join");
@@ -635,41 +787,68 @@ async function initForum(me) {
   const t = params.get("t");
   try {
     if (b && t) return await forumThread(me, b, t);
-    if (b) return await forumBoard(me, b);
-    const { boards } = await api("forum");
-    const list = box("Forum");
-    list.append(el("p", "dim", "talk about the world, share art, say hi. you need an account to post."));
-    for (const x of boards) {
-      const row = el("div", "member");
-      const info = el("div", "member-info");
-      info.append(link(`forum.html?b=${x.id}`, x.name, "user-link"), el("div", "dim", x.desc));
-      row.append(info, el("span", "dim", x.threads + " threads"));
-      list.append(row);
-    }
-    app.replaceChildren(list);
+    return await forumFeed(me, b || "all");
   } catch (error) {
     app.replaceChildren(box("Forum", el("p", "", error.message)));
   }
 }
 
-async function forumBoard(me, b) {
+// One post (thread or reply) as a card; shared by the feed and the thread page.
+function postCard(p, ctx) {
+  const card = el("div", "forum-post");
+  const head = el("div", "msg-head");
+  head.append(nameTag(p.author, p.color, p.owner), el("span", "dim", " · " + when(p.ts)));
+  card.append(head, el("p", "msg-text", p.text), mediaView(p.media), ...youtubeEmbeds(p.text));
+  if (ctx.me && (ctx.me.owner || ctx.me.user === p.authorKey)) {
+    card.append(button("Delete", async () => {
+      if (!confirm(ctx.isThread ? "Delete this whole thread?" : "Delete this reply?")) return;
+      try {
+        await api("forum", { action: "delete", board: ctx.board, thread: ctx.thread, reply: ctx.isThread ? undefined : p.id });
+        if (ctx.isThread && ctx.single) location.href = "forum.html?b=" + ctx.board;
+        else ctx.refresh();
+      } catch (error) {
+        alert(error.message);
+      }
+    }));
+  }
+  return card;
+}
+
+async function forumFeed(me, b) {
   const [{ boards }, data] = await Promise.all([api("forum"), api("forum?board=" + encodeURIComponent(b))]);
-  const info = boards.find((x) => x.id === b);
-  const list = box(info ? info.name : "Forum", link("forum.html", "← all boards", "pill"));
-  if (!data.threads.length) list.append(el("p", "dim", "no threads yet. start one."));
+  const names = new Map(boards.map((x) => [x.id, x.name]));
+  const refresh = () => initForum(me);
+
+  const nav = el("p", "small-links");
+  for (const [id, label] of [["all", "All"], ...boards.map((x) => [x.id, `${x.name} (${x.threads})`])]) {
+    const a = link(id === "all" ? "forum.html" : `forum.html?b=${id}`, label, "pill" + (id === b ? " on" : ""));
+    nav.append(a, " ");
+  }
+  const feed = box(b === "all" ? "Forum" : names.get(b) || "Forum", nav);
+  if (b === "all") feed.append(el("p", "dim", "talk about the world, share art, say hi. scroll to read everything, open a thread to reply."));
+  else feed.append(el("p", "dim", boards.find((x) => x.id === b)?.desc || ""));
+  if (!data.threads.length) feed.append(el("p", "dim", "no threads yet. start one."));
+
   for (const th of data.threads) {
-    const row = el("div", "member");
-    const main = el("div", "member-info");
-    main.append(link(`forum.html?b=${b}&t=${th.id}`, th.title, "user-link"));
-    const by = el("div", "dim");
-    by.append("by ", nameTag(th.author, th.color, th.owner), " · " + when(th.ts));
-    main.append(by);
-    row.append(main, el("span", "dim", th.replies + " replies"));
-    list.append(row);
+    const card = el("div", "thread-card");
+    const open = `forum.html?b=${th.board}&t=${th.id}`;
+    const title = el("h3", "thread-title");
+    title.append(link(open, th.title, "user-link"));
+    if (b === "all") title.append(" ", el("span", "dim", "in " + (names.get(th.board) || th.board)));
+    card.append(title);
+    const ctx = { me: data.me, board: th.board, thread: th.id, refresh };
+    card.append(postCard(th, { ...ctx, isThread: true }));
+    const hidden = th.replies - th.recent.length;
+    if (hidden > 0) card.append(link(open, `${hidden} earlier ${hidden === 1 ? "reply" : "replies"} ›`, "dim"));
+    for (const r of th.recent) card.append(postCard(r, { ...ctx, isThread: false }));
+    card.append(link(open, th.replies ? `${th.replies} replies · open to reply` : "open to reply", "pill"));
+    feed.append(card);
   }
 
   const form = el("form", "stack");
   const msg = notice();
+  const boardPick = el("select");
+  for (const x of boards) boardPick.append(new Option(x.name, x.id, false, x.id === (b === "all" ? "general" : b)));
   const title = input({ maxLength: 80, placeholder: "title", required: true });
   const text = el("textarea");
   text.maxLength = 3000;
@@ -678,48 +857,35 @@ async function forumBoard(me, b) {
   const picker = mediaPicker();
   const go = el("button", "pill", "Publish");
   go.type = "submit";
-  form.append(title, text, picker, go, msg);
+  form.append(boardPick, title, text, picker, go, msg);
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     go.disabled = true;
     msg.textContent = "publishing...";
     try {
       const media = await picker.collect();
-      const { id } = await api("forum", { action: "thread", board: b, title: title.value, text: text.value, media });
-      location.href = `forum.html?b=${b}&t=${id}`;
+      const { id } = await api("forum", { action: "thread", board: boardPick.value, title: title.value, text: text.value, media });
+      location.href = `forum.html?b=${boardPick.value}&t=${id}`;
     } catch (error) {
       msg.textContent = error.message;
       go.disabled = false;
     }
   });
-  const compose = me.user ? box("New thread", form) : box("New thread", el("p", "", "sign in to post. "), link("account.html", "Sign in / Join", "pill"));
-  app.replaceChildren(list, compose);
+  const compose = box("New post");
+  if (me.user) {
+    const d = el("details");
+    d.append(el("summary", "", "✠ write a new post"), form);
+    compose.append(d);
+  } else {
+    compose.append(el("p", "", "sign in to post. "), link("account.html", "Sign in / Join", "pill"));
+  }
+  app.replaceChildren(compose, feed);
 }
 
 async function forumThread(me, b, t) {
   const data = await api(`forum?board=${encodeURIComponent(b)}&thread=${encodeURIComponent(t)}`);
-  const canDelete = (p) => data.me && (data.me.owner || data.me.user === p.authorKey);
-
-  const post = (p, isThread) => {
-    const card = el("div", "forum-post");
-    const head = el("div", "msg-head");
-    head.append(nameTag(p.author, p.color, p.owner), el("span", "dim", " · " + when(p.ts)));
-    card.append(head, el("p", "msg-text", p.text), mediaView(p.media), ...youtubeEmbeds(p.text));
-    if (canDelete(p)) {
-      card.append(button("Delete", async () => {
-        if (!confirm(isThread ? "Delete this whole thread?" : "Delete this reply?")) return;
-        try {
-          await api("forum", { action: "delete", board: b, thread: t, reply: isThread ? undefined : p.id });
-          if (isThread) location.href = "forum.html?b=" + b;
-          else initForum(me);
-        } catch (error) {
-          alert(error.message);
-        }
-      }));
-    }
-    return card;
-  };
-
+  const ctx = { me: data.me, board: b, thread: t, refresh: () => initForum(me) };
+  const post = (p, isThread) => postCard(p, { ...ctx, isThread, single: true });
   const main = box(data.thread.title, link(`forum.html?b=${b}`, "← back to board", "pill"), post(data.thread, true));
   const replies = box("Replies");
   if (!data.replies.length) replies.append(el("p", "dim", "no replies yet."));

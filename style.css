@@ -657,3 +657,17 @@ img[src^="/api/avatar"] { object-fit: cover; padding: 0; }
   .construction, .dancer-track, .ticker-track, .dancer-gif { animation: none; }
   html { scroll-behavior: auto; }
 }
+
+/* Stamp column fitting, device preferences, forum feed */
+[hidden] { display: none !important; }
+#stamps-box { overflow: hidden; }
+.pref-nostamps #stamps-box { display: none; }
+.pref-calm .construction, .pref-calm .dancer-track, .pref-calm .ticker-track, .pref-calm .dancer-gif { animation: none; }
+.pref-large body { font-size: 15px; }
+.pref-xlarge body { font-size: 18px; }
+.thread-card { padding: 10px 0; border-top: 2px solid var(--blood); }
+.thread-title { margin: 0 0 4px; font-size: 1.05rem; }
+.thread-card > .dim, .thread-card > .pill { display: inline-block; margin: 4px 0; }
+.thread-card .forum-post + .forum-post { margin-left: 14px; }
+details > summary { cursor: pointer; }
+select { max-width: 100%; }

@@ -107,7 +107,7 @@ function buildSidebar(el) {
       <h2>Visitors</h2>
       <span class="counter" id="counter" aria-label="Visitor counter">------</span>
     </div>
-    <div class="box extra">
+    <div class="box extra" id="stamps-box">
       <h2>Stamps</h2>
       <div class="stamps">
         ${Array.from({ length: 39 }, (_, i) => `<img src="assets/b-${String(i + 1).padStart(2, "0")}.png" alt="Stamp ${i + 1}">`).join("")}
@@ -307,7 +307,7 @@ async function syncOwner() {
     if (!user) return;
     const set = (key, fn) => document.querySelectorAll(`[data-owner="${key}"]`).forEach(fn);
     set("photo", (n) => {
-      if (user.pfp) n.src = avatarSrc(user);
+      n.src = avatarSrc(user);
     });
     set("name", (n) => {
       n.textContent = user.name;
@@ -320,6 +320,46 @@ async function syncOwner() {
   } catch {}
 }
 syncOwner();
+
+// Device-only preferences from the account settings page.
+function applyPrefs() {
+  let prefs = {};
+  try {
+    prefs = JSON.parse(localStorage.getItem("sn_prefs")) || {};
+  } catch {}
+  const root = document.documentElement;
+  root.classList.toggle("pref-calm", Boolean(prefs.calm));
+  root.classList.toggle("pref-nostamps", Boolean(prefs.nostamps));
+  root.classList.toggle("pref-large", prefs.size === "large");
+  root.classList.toggle("pref-xlarge", prefs.size === "xlarge");
+  fitStamps();
+}
+
+// Full stamp list on the home page; elsewhere it's cut off where the main column ends,
+// so it never makes the page taller.
+function fitStamps() {
+  const box = document.getElementById("stamps-box");
+  const right = document.querySelector(".col-right");
+  const left = document.getElementById("left");
+  if (!box || !right || !left) return;
+  const current = location.pathname.split("/").pop();
+  if (!current || current === "index.html") return;
+  box.style.maxHeight = "";
+  box.hidden = false;
+  if (right.offsetTop > left.offsetTop + 10) {
+    box.hidden = true;
+    return;
+  }
+  const gap = parseFloat(getComputedStyle(box).marginBottom) || 0;
+  const room = right.offsetHeight - (box.offsetTop - left.offsetTop) - gap;
+  if (room < 120) box.hidden = true;
+  else box.style.maxHeight = room + "px";
+}
+applyPrefs();
+window.addEventListener("resize", fitStamps);
+window.addEventListener("load", fitStamps);
+const mainCol = document.querySelector(".col-right");
+if (mainCol && window.ResizeObserver) new ResizeObserver(fitStamps).observe(mainCol);
 meReady.then(fillAccountBox);
 runCounter();
 document.querySelectorAll(".thread").forEach(initThread);

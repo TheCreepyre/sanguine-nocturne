@@ -1,4 +1,4 @@
-import { putJson } from "./_store.js";
+import { putJson, delPath } from "./_store.js";
 import {
   COLOR_RE, AVATARS, wrap, respond, fail, readJson, keyOf, clean, checkName, hashPassword,
   checkPassword, validPassword, startSession, endSession, cookie, getViewer, requireViewer,
@@ -13,7 +13,8 @@ function color(value) {
 }
 
 function me(user) {
-  return { ...publicProfile(user) };
+  const s = user.settings || {};
+  return { ...publicProfile(user), settings: { noRequests: Boolean(s.noRequests), hidden: Boolean(s.hidden) } };
 }
 
 export const GET = wrap(async (request) => {
@@ -69,6 +70,7 @@ async function login(body) {
     }
     bad();
   }
+  if (user.banned) fail(403, "This account has been banned");
   if (user.fails) await putJson(`users/${key}.json`, { ...user, fails: 0, lockUntil: 0 });
   return respond({ user: me(user) }, 200, { "set-cookie": await startSession(key) });
 }
@@ -87,6 +89,9 @@ async function update(request, body) {
   if ("mood" in body) user.mood = clean(body.mood, 30);
   if ("pronouns" in body) user.pronouns = clean(body.pronouns, 30);
   if ("quote" in body) user.quote = clean(body.quote, 120);
+  if (body.settings && typeof body.settings === "object") {
+    user.settings = { noRequests: Boolean(body.settings.noRequests), hidden: Boolean(body.settings.hidden) };
+  }
   if (body.newPassword) {
     if (!(await checkPassword(body.password, user))) fail(401, "Current password is wrong");
     validPassword(body.newPassword);
@@ -96,9 +101,18 @@ async function update(request, body) {
   return respond({ user: me(user) });
 }
 
+async function deleteAccount(request, body) {
+  const viewer = await requireViewer(request);
+  if (viewer.owner) fail(403, "The owner account can't be deleted here");
+  if (!(await checkPassword(body.password, viewer))) fail(401, "Password is wrong");
+  await Promise.all([delPath(`users/${viewer.key}.json`), delPath(`avatars/${viewer.key}.json`), endSession(request)]);
+  return respond({ ok: true }, 200, { "set-cookie": cookie("", 0) });
+}
+
 export const POST = wrap(async (request) => {
   const body = await readJson(request);
   switch (body.action) {
+    case "deleteAccount": return deleteAccount(request, body);
     case "register": return register(request, body);
     case "login": return login(body);
     case "logout":
