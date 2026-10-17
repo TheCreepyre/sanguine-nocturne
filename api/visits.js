@@ -27,7 +27,7 @@ export async function GET() {
     return respond({ count: await countVisits() });
   } catch (error) {
     console.error(error);
-    return respond({ error: "Could not read visitors", detail: String(error?.message) }, 500);
+    return respond({ error: "Could not read visitors" }, 500);
   }
 }
 
@@ -36,13 +36,13 @@ export async function POST() {
   try {
     const timestamp = new Date().toISOString();
     await put(`${PREFIX}${timestamp}.json`, JSON.stringify({ timestamp }), {
-      access: "public",
+      access: "private",
       contentType: "application/json",
       addRandomSuffix: true,
     });
     return respond({ count: await countVisits() });
   } catch (error) {
     console.error(error);
-    return respond({ error: "Could not record visit", detail: String(error?.message) }, 500);
+    return respond({ error: "Could not record visit" }, 500);
   }
 }
