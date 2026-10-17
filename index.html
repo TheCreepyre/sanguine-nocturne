@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -246,6 +246,21 @@
 
     @keyframes blink { to { visibility: hidden; } }
 
+    .dancers {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 12px;
+      padding: 6px 8px;
+      border: 1px solid var(--blood);
+      background: #b3303c;
+    }
+
+    .dancer-gif {
+      width: 32px;
+      height: 32px;
+      object-fit: contain;
+    }
+
     .cards {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
@@ -384,6 +399,14 @@
         </div>
 
         <div class="construction">UNDER CONSTRUCTION</div>
+
+        <div class="dancers" aria-hidden="true">
+          <img class="dancer-gif" src="assets/dancing-banana.gif" alt="">
+          <img class="dancer-gif" src="assets/wizard.png" alt="">
+          <img class="dancer-gif" src="assets/chicken.png" alt="">
+          <img class="dancer-gif" src="assets/walker.png" alt="">
+          <img class="dancer-gif" src="assets/toaster.png" alt="">
+        </div>
       </aside>
 
       <main>
