@@ -140,6 +140,27 @@
       top: 14px;
     }
 
+    .stamps-side { flex: 0 0 130px; }
+
+    .stamps-box {
+      background:
+        linear-gradient(180deg, #ffffff0d 0, #ffffff04 35%, transparent 45%),
+        linear-gradient(180deg, #2e2326, #3a1219);
+    }
+
+    .stamps {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .stamps img {
+      display: block;
+      max-width: 100%;
+      image-rendering: pixelated;
+    }
+
     main {
       flex: 1;
       min-width: 0;
@@ -247,18 +268,31 @@
     @keyframes blink { to { visibility: hidden; } }
 
     .dancers {
-      display: flex;
-      justify-content: space-between;
+      display: block;
+      contain: inline-size;
+      overflow: hidden;
       margin-top: 12px;
-      padding: 6px 8px;
+      padding: 6px 0;
       border: 1px solid var(--blood);
       background: #b3303c;
     }
 
+    .dancer-track {
+      display: flex;
+      gap: 14px;
+      width: max-content;
+      padding-right: 14px;
+      animation: cycle 9s linear infinite;
+    }
+
+    @keyframes cycle {
+      to { transform: translateX(-33.3333%); }
+    }
+
     .dancer-gif {
-      width: 32px;
-      height: 32px;
-      object-fit: contain;
+      width: auto;
+      height: 40px;
+      image-rendering: pixelated;
     }
 
     .cards {
@@ -316,6 +350,7 @@
     @media (max-width: 720px) {
       #flex { flex-direction: column; }
       aside { position: static; flex-basis: auto; width: 100%; }
+      .stamps-side { flex: 0 0 auto; }
 
       #topbar { height: auto; min-height: 46px; gap: 6px; }
 
@@ -336,7 +371,7 @@
     }
 
     @media (prefers-reduced-motion: reduce) {
-      .construction, .bubble { animation: none; }
+      .construction, .bubble, .dancer-track { animation: none; }
       html { scroll-behavior: auto; }
     }
 
@@ -401,11 +436,44 @@
         <div class="construction">UNDER CONSTRUCTION</div>
 
         <div class="dancers" aria-hidden="true">
-          <img class="dancer-gif" src="assets/dancing-banana.gif" alt="">
-          <img class="dancer-gif" src="assets/wizard.png" alt="">
-          <img class="dancer-gif" src="assets/chicken.png" alt="">
-          <img class="dancer-gif" src="assets/walker.png" alt="">
-          <img class="dancer-gif" src="assets/toaster.png" alt="">
+          <div class="dancer-track">
+            <img class="dancer-gif" src="assets/icon-2.png" alt="">
+            <img class="dancer-gif" src="assets/icon-3.png" alt="">
+            <img class="dancer-gif" src="assets/icon-4.png" alt="">
+            <img class="dancer-gif" src="assets/icon-5.png" alt="">
+            <img class="dancer-gif" src="assets/icon-6.png" alt="">
+            <img class="dancer-gif" src="assets/icon-7.png" alt="">
+            <img class="dancer-gif" src="assets/icon-8.png" alt="">
+            <img class="dancer-gif" src="assets/icon-9.png" alt="">
+            <img class="dancer-gif" src="assets/icon-10.png" alt="">
+            <img class="dancer-gif" src="assets/icon-11.png" alt="">
+            <img class="dancer-gif" src="assets/toaster.png" alt="">
+            <img class="dancer-gif" src="assets/wizard.png" alt="">
+            <img class="dancer-gif" src="assets/icon-2.png" alt="">
+            <img class="dancer-gif" src="assets/icon-3.png" alt="">
+            <img class="dancer-gif" src="assets/icon-4.png" alt="">
+            <img class="dancer-gif" src="assets/icon-5.png" alt="">
+            <img class="dancer-gif" src="assets/icon-6.png" alt="">
+            <img class="dancer-gif" src="assets/icon-7.png" alt="">
+            <img class="dancer-gif" src="assets/icon-8.png" alt="">
+            <img class="dancer-gif" src="assets/icon-9.png" alt="">
+            <img class="dancer-gif" src="assets/icon-10.png" alt="">
+            <img class="dancer-gif" src="assets/icon-11.png" alt="">
+            <img class="dancer-gif" src="assets/toaster.png" alt="">
+            <img class="dancer-gif" src="assets/wizard.png" alt="">
+            <img class="dancer-gif" src="assets/icon-2.png" alt="">
+            <img class="dancer-gif" src="assets/icon-3.png" alt="">
+            <img class="dancer-gif" src="assets/icon-4.png" alt="">
+            <img class="dancer-gif" src="assets/icon-5.png" alt="">
+            <img class="dancer-gif" src="assets/icon-6.png" alt="">
+            <img class="dancer-gif" src="assets/icon-7.png" alt="">
+            <img class="dancer-gif" src="assets/icon-8.png" alt="">
+            <img class="dancer-gif" src="assets/icon-9.png" alt="">
+            <img class="dancer-gif" src="assets/icon-10.png" alt="">
+            <img class="dancer-gif" src="assets/icon-11.png" alt="">
+            <img class="dancer-gif" src="assets/toaster.png" alt="">
+            <img class="dancer-gif" src="assets/wizard.png" alt="">
+          </div>
         </div>
       </aside>
 
@@ -487,6 +555,19 @@
           &copy; Sanguine Nocturne &middot; Stay strange. Stay out past dark.
         </footer>
       </main>
+
+      <aside class="stamps-side">
+        <div class="box stamps-box">
+          <h2>Stamps</h2>
+          <div class="stamps">
+            <img src="assets/stamp-cat.png" alt="Black cat stamp">
+            <img src="assets/stamp-trans.png" alt="Trans pride stamp">
+            <img src="assets/stamp-miku.png" alt="Hatsune Miku stamp">
+            <img src="assets/stamp-stairs.png" alt="Do not fall down stairs stamp">
+            <img src="assets/stamp-explosion.png" alt="Explosion stamp">
+          </div>
+        </div>
+      </aside>
     </div>
   </div>
 
