@@ -12,9 +12,9 @@ function avatarSrc(n) {
 }
 
 // A username link in the person's own colour.
-function nameTag(name, color) {
+function nameTag(name, color, owner) {
   if (!USER_OK.test(name)) return el("b", "label", name);
-  const a = el("a", "user-link", name);
+  const a = el("a", "user-link", (owner ? "✠ " : "") + name);
   a.href = "profile.html?u=" + encodeURIComponent(name);
   if (COLOR_OK.test(color || "")) a.style.color = color;
   return a;
@@ -38,7 +38,7 @@ function fillAccountBox({ user, counts }) {
   const img = el("img", "acct-avatar");
   img.src = avatarSrc(user.avatar);
   img.alt = "";
-  head.append(img, nameTag(user.name, user.color));
+  head.append(img, nameTag(user.name, user.color, user.owner));
   const list = el("ul", "acct-links");
   const links = [
     ["profile.html?u=" + encodeURIComponent(user.name), "My profile", 0],
@@ -63,6 +63,7 @@ const PAGES = [
   ["characters.html", "Characters"],
   ["gallery.html", "Gallery"],
   ["chat.html", "Chat"],
+  ["forum.html", "Forum"],
   ["about.html", "About me"],
   ["what.html", "What is this"],
   ["stamps.html", "Stamp wall"],

@@ -142,6 +142,7 @@ export const publicProfile = (u) => ({
   quote: u.quote || "",
   accent: u.accent || "",
   joined: u.joined,
+  owner: Boolean(u.owner),
 });
 
 export const loadUser = (key) => getJson(`users/${key}.json`);
@@ -151,9 +152,18 @@ export function userKeyParam(value) {
   return USER_RE.test(name) ? keyOf(name) : fail(400, "Bad username");
 }
 
-export function checkName(name) {
+export function checkName(name, isOwner = false) {
   if (!USER_RE.test(name)) fail(400, "Username: 3-20 letters, numbers, _ or -");
-  if (RESERVED.has(keyOf(name))) fail(400, "That name is taken");
+  if (RESERVED.has(keyOf(name)) && !isOwner) fail(400, "That name is taken");
+}
+
+// The site owner proves who they are with OWNER_CODE (set in Vercel env vars).
+export function ownerCodeOk(code) {
+  const real = process.env.OWNER_CODE;
+  if (!real || typeof code !== "string") return false;
+  const a = createHash("sha256").update(code).digest();
+  const b = createHash("sha256").update(real).digest();
+  return timingSafeEqual(a, b);
 }
 
 // Edge blobs: rel/<me>/<friend|in|out>-<other>.json
@@ -184,8 +194,17 @@ export async function unreadFrom(key) {
     .filter((m) => m.at > (readAt.get(m.from) || 0));
 }
 
+// Check the cooldown without recording it; call markThrottle once the action succeeded.
 export async function throttle(request, label, ms) {
-  const path = `throttle/${label}-${clientHash(request)}.json`;
+  const last = await getJson(`throttle/${label}-${clientHash(request)}.json`);
+  if (last && Date.now() - last.at < ms) fail(429, `Please wait ${Math.ceil(ms / 1000)} seconds before trying again`);
+}
+
+export const markThrottle = (request, label) =>
+  putJson(`throttle/${label}-${clientHash(request)}.json`, { at: Date.now() });
+
+export async function throttleUser(key, label, ms) {
+  const path = `throttle/u-${label}-${key}.json`;
   const last = await getJson(path);
   if (last && Date.now() - last.at < ms) fail(429, "Slow down a little");
   await putJson(path, { at: Date.now() });

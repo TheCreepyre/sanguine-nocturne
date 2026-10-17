@@ -2,7 +2,7 @@ import { putJson } from "./_store.js";
 import {
   COLOR_RE, AVATARS, wrap, respond, fail, readJson, keyOf, clean, checkName, hashPassword,
   checkPassword, validPassword, startSession, endSession, cookie, getViewer, requireViewer,
-  loadUser, publicProfile, relations, unreadFrom, throttle,
+  loadUser, publicProfile, relations, unreadFrom, throttle,   markThrottle, ownerCodeOk,
 } from "./_lib.js";
 
 const LOCK_AFTER = 5;
@@ -29,13 +29,16 @@ export const GET = wrap(async (request) => {
 
 async function register(request, body) {
   const name = String(body.name || "").trim();
-  checkName(name);
+  const isOwner = ownerCodeOk(body.ownerCode);
+  if (body.ownerCode && !isOwner) fail(403, "Wrong owner code");
+  checkName(name, isOwner);
   validPassword(body.password);
   const key = keyOf(name);
   await throttle(request, "reg", 30000);
   const { salt, hash } = await hashPassword(body.password);
   const user = {
     name,
+    owner: isOwner,
     color: color(String(body.color || "")),
     avatar: 1 + Math.floor(Math.random() * AVATARS),
     bio: "", mood: "", pronouns: "", quote: "", accent: "",
@@ -46,6 +49,7 @@ async function register(request, body) {
   } catch {
     fail(409, "That name is taken");
   }
+  await markThrottle(request, "reg");
   return respond({ user: me(user) }, 200, { "set-cookie": await startSession(key) });
 }
 

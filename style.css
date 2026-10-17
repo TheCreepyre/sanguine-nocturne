@@ -605,6 +605,9 @@ a.pill { text-decoration: none; }
 .badge { display: inline-block; min-width: 16px; padding: 0 4px; border-radius: 8px; background: var(--blood); color: #fff; font-size: 10px; text-align: center; }
 
 .dm-log { min-height: 200px; max-height: 420px; }
+.forum-post { padding: 6px 0; border-bottom: 1px dotted #333; }
+.forum-post:last-child { border-bottom: 0; }
+.forum-post .pill { margin-top: 4px; }
 .dm-log .msg.mine { text-align: right; }
 .dm-log .msg.mine .msg-text { color: var(--blood-bright); }
 

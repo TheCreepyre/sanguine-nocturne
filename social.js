@@ -4,13 +4,22 @@ const page = document.body.dataset.page;
 const params = new URLSearchParams(location.search);
 
 async function api(path, body) {
-  const res = await fetch("/api/" + path, {
-    method: body ? "POST" : "GET",
-    credentials: "same-origin",
-    headers: body ? { "content-type": "application/json" } : undefined,
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  const data = await res.json().catch(() => ({}));
+  if (location.protocol === "file:") {
+    throw new Error("accounts only work on the live site (sanguine-nocturne.vercel.app), not from a local file");
+  }
+  let res;
+  try {
+    res = await fetch("/api/" + path, {
+      method: body ? "POST" : "GET",
+      credentials: "same-origin",
+      headers: body ? { "content-type": "application/json" } : undefined,
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  } catch {
+    throw new Error("can't reach the server, check your connection and try again");
+  }
+  const data = await res.json().catch(() => null);
+  if (!data) throw new Error("the server isn't answering properly right now (" + res.status + "), try again in a moment");
   if (!res.ok) throw new Error(data.error || "something went wrong");
   return data;
 }
@@ -88,10 +97,14 @@ function authForm(mode) {
   const name = input({ name: "name", maxLength: 20, autocomplete: "username", required: true });
   const pass = input({ name: "password", type: "password", autocomplete: mode === "join" ? "new-password" : "current-password", required: true, maxLength: 100 });
   const color = input({ type: "color", value: "#ff2a2a" });
+  const owner = input({ name: "ownerCode", type: "password", autocomplete: "off", placeholder: "owner code (only for the site owner)" });
   const form = el("form", "stack");
   form.append(field("Username", name), field("Password", pass));
   if (mode === "join") {
     form.append(field("Name colour", color), el("p", "dim", "3-20 letters, numbers, _ or -. password 6+ characters. there is no email, so if you forget your password it's gone for good."));
+    const d = el("details");
+    d.append(el("summary", "dim", "i own this site"), owner);
+    form.append(d);
   }
   const go = el("button", "pill", mode === "join" ? "Join" : "Sign in");
   go.type = "submit";
@@ -102,7 +115,10 @@ function authForm(mode) {
     msg.textContent = "...";
     try {
       const body = { action: mode === "join" ? "register" : "login", name: name.value, password: pass.value };
-      if (mode === "join") body.color = color.value;
+      if (mode === "join") {
+        body.color = color.value;
+        if (owner.value) body.ownerCode = owner.value;
+      }
       const { user } = await api("auth", body);
       location.href = "profile.html?u=" + encodeURIComponent(user.name);
     } catch (error) {
@@ -244,7 +260,7 @@ async function initProfile(me) {
   img.alt = "";
   const side = el("div");
   const title = el("h3", "profile-name");
-  title.append(nameTag(user.name, user.color));
+  title.append(nameTag(user.name, user.color, user.owner));
   side.append(title);
   if (user.quote) side.append(el("p", "dim", `"${user.quote}"`));
   if (user.mood) side.append(el("p", "mood", "Mood: " + user.mood));
@@ -434,5 +450,125 @@ async function openConversation(otherName) {
   setInterval(() => !document.hidden && load(), 4000);
 }
 
-const PAGE_INIT = { account: initAccount, profile: initProfile, friends: initFriends, messages: initMessages };
+// ---------- forum ----------
+const link = (href, label, cls = "") => Object.assign(el("a", cls, label), { href });
+const when = (ts) => new Date(ts).toLocaleString([], { dateStyle: "short", timeStyle: "short" });
+
+async function initForum(me) {
+  const b = params.get("b");
+  const t = params.get("t");
+  try {
+    if (b && t) return await forumThread(me, b, t);
+    if (b) return await forumBoard(me, b);
+    const { boards } = await api("forum");
+    const list = box("Forum");
+    list.append(el("p", "dim", "talk about the world, share art, say hi. you need an account to post."));
+    for (const x of boards) {
+      const row = el("div", "member");
+      const info = el("div", "member-info");
+      info.append(link(`forum.html?b=${x.id}`, x.name, "user-link"), el("div", "dim", x.desc));
+      row.append(info, el("span", "dim", x.threads + " threads"));
+      list.append(row);
+    }
+    app.replaceChildren(list);
+  } catch (error) {
+    app.replaceChildren(box("Forum", el("p", "", error.message)));
+  }
+}
+
+async function forumBoard(me, b) {
+  const [{ boards }, data] = await Promise.all([api("forum"), api("forum?board=" + encodeURIComponent(b))]);
+  const info = boards.find((x) => x.id === b);
+  const list = box(info ? info.name : "Forum", link("forum.html", "← all boards", "pill"));
+  if (!data.threads.length) list.append(el("p", "dim", "no threads yet. start one."));
+  for (const th of data.threads) {
+    const row = el("div", "member");
+    const main = el("div", "member-info");
+    main.append(link(`forum.html?b=${b}&t=${th.id}`, th.title, "user-link"));
+    const by = el("div", "dim");
+    by.append("by ", nameTag(th.author, th.color, th.owner), " · " + when(th.ts));
+    main.append(by);
+    row.append(main, el("span", "dim", th.replies + " replies"));
+    list.append(row);
+  }
+
+  const form = el("form", "stack");
+  const msg = notice();
+  const title = input({ maxLength: 80, placeholder: "title", required: true });
+  const text = el("textarea");
+  text.maxLength = 3000;
+  text.rows = 6;
+  text.placeholder = "write your post...";
+  const go = el("button", "pill", "Publish");
+  go.type = "submit";
+  form.append(title, text, go, msg);
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    go.disabled = true;
+    try {
+      const { id } = await api("forum", { action: "thread", board: b, title: title.value, text: text.value });
+      location.href = `forum.html?b=${b}&t=${id}`;
+    } catch (error) {
+      msg.textContent = error.message;
+      go.disabled = false;
+    }
+  });
+  const compose = me.user ? box("New thread", form) : box("New thread", el("p", "", "sign in to post. "), link("account.html", "Sign in / Join", "pill"));
+  app.replaceChildren(list, compose);
+}
+
+async function forumThread(me, b, t) {
+  const data = await api(`forum?board=${encodeURIComponent(b)}&thread=${encodeURIComponent(t)}`);
+  const canDelete = (p) => data.me && (data.me.owner || data.me.user === p.authorKey);
+
+  const post = (p, isThread) => {
+    const card = el("div", "forum-post");
+    const head = el("div", "msg-head");
+    head.append(nameTag(p.author, p.color, p.owner), el("span", "dim", " · " + when(p.ts)));
+    card.append(head, el("p", "msg-text", p.text));
+    if (canDelete(p)) {
+      card.append(button("Delete", async () => {
+        if (!confirm(isThread ? "Delete this whole thread?" : "Delete this reply?")) return;
+        try {
+          await api("forum", { action: "delete", board: b, thread: t, reply: isThread ? undefined : p.id });
+          if (isThread) location.href = "forum.html?b=" + b;
+          else initForum(me);
+        } catch (error) {
+          alert(error.message);
+        }
+      }));
+    }
+    return card;
+  };
+
+  const main = box(data.thread.title, link(`forum.html?b=${b}`, "← back to board", "pill"), post(data.thread, true));
+  const replies = box("Replies");
+  if (!data.replies.length) replies.append(el("p", "dim", "no replies yet."));
+  for (const r of data.replies) replies.append(post(r, false));
+
+  const form = el("form", "stack");
+  const msg = notice();
+  const text = el("textarea");
+  text.maxLength = 2000;
+  text.rows = 4;
+  text.placeholder = "write a reply...";
+  const go = el("button", "pill", "Reply");
+  go.type = "submit";
+  form.append(text, go, msg);
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    go.disabled = true;
+    try {
+      await api("forum", { action: "reply", board: b, thread: t, text: text.value });
+      await initForum(me);
+    } catch (error) {
+      msg.textContent = error.message;
+      go.disabled = false;
+    }
+  });
+  const compose = me.user ? box("Reply", form) : box("Reply", el("p", "", "sign in to reply. "), link("account.html", "Sign in / Join", "pill"));
+  app.replaceChildren(main, replies, compose);
+}
+
+const PAGE_INIT = { account: initAccount, profile: initProfile, friends: initFriends, messages: initMessages, forum: initForum };
 if (app && PAGE_INIT[page]) meReady.then((me) => PAGE_INIT[page](me));
