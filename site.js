@@ -48,7 +48,23 @@ function buildSidebar(el) {
         <img src="assets/b-15.png" alt="Night person">
         <a href="stamps.html">more...</a>
       </div>
+    </div>
+    <div class="box dance">
+      <h2>Creatures</h2>
+      <div class="dance-grid">${danceIcons()}</div>
     </div>`;
+}
+
+// Bigger animated icons to fill the left column; long pages get more.
+function danceIcons() {
+  const long = ["characters.html", "lore.html", "gallery.html", "chat.html"].includes(location.pathname.split("/").pop());
+  const count = long ? (location.pathname.endsWith("characters.html") ? 36 : 16) : 6;
+  const picks = [1, 4, 5, 7, 9, 12, 15, 18, 19, 21, 2, 6, 10, 14, 17, 22, 3, 8, 11, 13, 16, 20, 23];
+  return Array.from({ length: count }, (_, i) => picks[i % picks.length]).map(n => {
+    const id = String(n).padStart(2, "0");
+    const ext = [15, 18, 19].includes(n) ? "webp" : "png";
+    return `<img src="assets/fx-${id}.${ext}" alt="">`;
+  }).join("");
 }
 
 async function runCounter() {
