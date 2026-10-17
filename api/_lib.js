@@ -6,7 +6,7 @@ export const COLOR_RE = /^#[0-9a-fA-F]{6}$/;
 export const AVATARS = 23;
 const RESERVED = new Set([
   "admin", "administrator", "mod", "moderator", "owner", "staff", "system", "root",
-  "sanguine", "nocturne", "herr-myrden", "herrmyrden", "myrden", "anonymous", "guest",
+  "sanguine", "nocturne", "herr-myrden", "herr_myrden", "herrmyrden", "myrden", "anonymous", "guest",
 ]);
 const SESSION_DAYS = 30;
 const MAX_BODY = 6000;
