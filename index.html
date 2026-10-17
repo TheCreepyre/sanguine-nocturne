@@ -163,11 +163,29 @@
       <a href="mailto:hello@sanguinenocturne.com">E-mail the webmaster</a>
       <a href="#guestbook">Sign the guestbook</a>
     </nav>
-    <span class="counter" aria-label="Visitor counter">000042</span>
+    <span class="counter" id="counter" aria-label="Visitor counter">------</span>
     <footer id="guestbook">
-      You are visitor #42. Be nice, stay strange.<br>
+      You are visitor <span id="visitor-number">#?</span>. Be nice, stay strange.<br>
       Best viewed after midnight, with the volume up.
     </footer>
   </main>
+  <script>
+    (async () => {
+      const counter = document.getElementById("counter");
+      const label = document.getElementById("visitor-number");
+      try {
+        // Only record one visit per browser session; reloads just read the count.
+        const firstVisit = !sessionStorage.getItem("visited");
+        const res = await fetch("/api/visits", { method: firstVisit ? "POST" : "GET" });
+        if (!res.ok) throw new Error(res.status);
+        const { count } = await res.json();
+        sessionStorage.setItem("visited", "1");
+        counter.textContent = String(count).padStart(6, "0");
+        label.textContent = "#" + count;
+      } catch {
+        counter.textContent = "??????";
+      }
+    })();
+  </script>
 </body>
 </html>
