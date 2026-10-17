@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="170" height="170" viewBox="0 0 170 170">
+  <defs>
+    <g id="s" fill="#151515" stroke="#2e2e2e" stroke-width="2" stroke-linejoin="round" stroke-linecap="round">
+      <path d="M-34 -24L34 30M34 -24L-34 30" stroke-width="8"/>
+      <circle cx="-36" cy="-26" r="5"/><circle cx="-30" cy="-30" r="5"/>
+      <circle cx="36" cy="-26" r="5"/><circle cx="30" cy="-30" r="5"/>
+      <circle cx="-36" cy="32" r="5"/><circle cx="-30" cy="36" r="5"/>
+      <circle cx="36" cy="32" r="5"/><circle cx="30" cy="36" r="5"/>
+      <path d="M-22 -4C-22 -34 22 -34 22 -4C22 6 16 10 14 14V25H-14V14C-16 10 -22 6 -22 -4Z"/>
+      <circle cx="-9" cy="-3" r="6.5" fill="#000"/><circle cx="9" cy="-3" r="6.5" fill="#000"/>
+      <path d="M0 6L-3.5 13H3.5Z" fill="#000"/>
+      <path d="M-7 17V25M0 17V25M7 17V25" fill="none"/>
+    </g>
+  </defs>
+  <rect width="170" height="170" fill="#0a0a0a"/>
+  <use href="#s" x="85" y="85"/>
+  <use href="#s" x="0" y="0"/><use href="#s" x="170" y="0"/>
+  <use href="#s" x="0" y="170"/><use href="#s" x="170" y="170"/>
+</svg>

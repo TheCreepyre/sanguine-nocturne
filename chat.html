@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Chat - Sanguine Nocturne</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="topbar">
+    <a id="header" class="bubble" href="index.html"><span>Sanguine Nocturne</span></a>
+    <a id="recruit" class="bubble" href="chat.html"><span>sanguine wants you! have what it takes?</span></a>
+  </div>
+
+  <div id="container">
+    <div class="profile">
+      <div class="col-left" id="left"></div>
+
+      <div class="col-right">
+        <div class="box">
+          <h2>The Chatroom</h2>
+          <p class="dim">everything here is public and updates by itself every few seconds.</p>
+          <div class="thread" data-thread="chat" data-limit="60" data-poll="4000" data-stick data-rows="3" data-placeholder="say something to the room..." data-empty="it's quiet in here. say something!"></div>
+        </div>
+
+        <div class="box">
+          <h2>House rules</h2>
+          <ol class="rules">
+            <li>be nice. it's a tiny corner of the internet, not a fight club.</li>
+            <li>no spam, no ads, no sketchy links.</li>
+            <li>500 characters per message, and give it a few seconds between posts.</li>
+            <li>don't post anything private. everyone can see this.</li>
+            <li>if you ruin it for everyone i'll delete your stuff.</li>
+          </ol>
+        </div>
+
+        <footer>&copy; sanguine nocturne</footer>
+      </div>
+    </div>
+  </div>
+
+  <script src="site.js"></script>
+</body>
+</html>
