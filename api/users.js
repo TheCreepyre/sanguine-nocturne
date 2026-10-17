@@ -15,6 +15,14 @@ export const GET = wrap(async (request) => {
     });
   }
 
+  if (params.has("owner")) {
+    for (const key of ["herr-myrden", "herr_myrden", "herrmyrden"]) {
+      const u = await loadUser(key);
+      if (u && u.owner) return respond({ user: publicProfile(u) });
+    }
+    return respond({ user: null });
+  }
+
   const key = keyOf(params.get("name") || "");
   if (!/^[a-z0-9_-]{3,20}$/.test(key)) fail(400, "Bad username");
   const user = await loadUser(key);

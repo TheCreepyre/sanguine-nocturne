@@ -612,6 +612,9 @@ img[src^="/api/avatar"] { object-fit: cover; padding: 0; }
 .forum-post { padding: 6px 0; border-bottom: 1px dotted #333; }
 .forum-post:last-child { border-bottom: 0; }
 .forum-post .pill { margin-top: 4px; }
+.attachments { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.attachments img, .attachments video { display: block; max-width: 100%; max-height: 320px; border: 1px solid var(--line); background: #000; }
+.yt { display: block; width: 100%; max-width: 480px; aspect-ratio: 16 / 9; margin-top: 6px; border: 1px solid var(--line); }
 .dm-log .msg.mine { text-align: right; }
 .dm-log .msg.mine .msg-text { color: var(--blood-bright); }
 

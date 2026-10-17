@@ -1,5 +1,6 @@
 import { putJson, getJson, listBlobs, delPath } from "./_store.js";
 import { wrap, respond, fail, readJson, requireViewer, getViewer, clean, throttleUser } from "./_lib.js";
+import { MEDIA_RE } from "./media.js";
 
 const BOARDS = [
   ["general", "General", "anything goes (almost)"],
@@ -19,7 +20,13 @@ const threadId = (v) => (ID_RE.test(String(v)) ? String(v) : fail(400, "Bad thre
 
 const view = (p) => ({
   id: p.id, title: p.title, text: p.text, author: p.author, color: p.color, owner: Boolean(p.owner), ts: p.ts,
+  media: p.media || [],
 });
+
+const mediaList = (value) => {
+  const list = Array.isArray(value) ? value.slice(0, 4) : [];
+  return list.every((m) => MEDIA_RE.test(String(m))) ? list.map(String) : fail(400, "Bad attachment");
+};
 
 export const GET = wrap(async (request) => {
   const params = new URL(request.url).searchParams;
@@ -59,21 +66,23 @@ export const POST = wrap(async (request) => {
     case "thread": {
       const title = clean(body.title, 80);
       const text = clean(body.text, 3000);
+      const media = mediaList(body.media);
       if (title.length < 3) fail(400, "Give it a title (3+ characters)");
-      if (!text) fail(400, "Write something first");
+      if (!text && !media.length) fail(400, "Write something first");
       await throttleUser(viewer.key, "thread", 20000);
       const id = newId();
-      await putJson(`threads/${b}/${id}.json`, { id, title, text, ts: new Date().toISOString(), ...author }, { overwrite: false });
+      await putJson(`threads/${b}/${id}.json`, { id, title, text, media, ts: new Date().toISOString(), ...author }, { overwrite: false });
       return respond({ id });
     }
     case "reply": {
       const id = threadId(body.thread);
       const text = clean(body.text, 2000);
-      if (!text) fail(400, "Write something first");
+      const media = mediaList(body.media);
+      if (!text && !media.length) fail(400, "Write something first");
       if (!(await getJson(`threads/${b}/${id}.json`))) fail(404, "No such thread");
       await throttleUser(viewer.key, "reply", 5000);
       const rid = newId();
-      await putJson(`replies/${id}/${rid}.json`, { id: rid, text, ts: new Date().toISOString(), ...author }, { overwrite: false });
+      await putJson(`replies/${id}/${rid}.json`, { id: rid, text, media, ts: new Date().toISOString(), ...author }, { overwrite: false });
       return respond({ ok: true });
     }
     case "delete": {
@@ -84,14 +93,20 @@ export const POST = wrap(async (request) => {
         const reply = await getJson(`replies/${id}/${rid}.json`);
         if (!reply) return respond({ ok: true });
         if (!isOwner && reply.userKey !== viewer.key) fail(403, "Not yours to delete");
-        await delPath(`replies/${id}/${rid}.json`);
+        await Promise.all([delPath(`replies/${id}/${rid}.json`), ...(reply.media || []).map((m) => delPath(`media/${m}`))]);
         return respond({ ok: true });
       }
       const thread = await getJson(`threads/${b}/${id}.json`);
       if (!thread) return respond({ ok: true });
       if (!isOwner && thread.userKey !== viewer.key) fail(403, "Not yours to delete");
       const rs = await listBlobs(`replies/${id}/`);
-      await Promise.all([delPath(`threads/${b}/${id}.json`), ...rs.map((r) => delPath(r.pathname))]);
+      const replies = await Promise.all(rs.map((r) => getJson(r.pathname).catch(() => null)));
+      const files = [thread, ...replies].flatMap((p) => (p && p.media) || []);
+      await Promise.all([
+        delPath(`threads/${b}/${id}.json`),
+        ...rs.map((r) => delPath(r.pathname)),
+        ...files.map((m) => delPath(`media/${m}`)),
+      ]);
       return respond({ ok: true });
     }
     default:

@@ -52,6 +52,26 @@ export async function listBlobs(prefix) {
   return out.sort((a, b) => (a.pathname < b.pathname ? -1 : 1));
 }
 
+export async function putBinary(path, buffer, contentType) {
+  if (memory) {
+    memory.set(path, { body: buffer, at: Date.now() });
+    return;
+  }
+  await put(path, buffer, { access: "private", contentType, addRandomSuffix: false, allowOverwrite: false });
+}
+
+export async function getBinary(path) {
+  if (memory) return memory.get(path)?.body || null;
+  try {
+    const result = await get(path, { access: "private", useCache: false });
+    if (!result || result.statusCode !== 200) return null;
+    return Buffer.from(await new Response(result.stream).arrayBuffer());
+  } catch (error) {
+    if (error?.name === "BlobNotFoundError") return null;
+    throw error;
+  }
+}
+
 export async function delPath(path) {
   if (memory) {
     memory.delete(path);

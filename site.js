@@ -84,14 +84,14 @@ function buildSidebar(el) {
   el.innerHTML = `
     <div class="box extra">
       <div class="photo-row">
-        <img class="photo" src="assets/pfp.jpg" alt="Herr Myrden profile picture">
+        <img class="photo" data-owner="photo" src="assets/pfp.jpg" alt="Herr Myrden profile picture">
         <div>
-          <b class="name-small">Herr Myrden</b>
+          <b class="name-small"><a data-owner="name" href="profile.html?u=Herr-Myrden">Herr Myrden</a></b>
           <p class="online">          &#9679; mrrlem!</p>
-                    <p class="dim">"do not fear me, as i fear myself more"</p>
+                    <p class="dim" data-owner="quote">"do not fear me, as i fear myself more"</p>
         </div>
       </div>
-      <p class="mood">Mood: <b>(tired)</b></p>
+      <p class="mood">Mood: <b data-owner="mood">(tired)</b></p>
       <p class="small-links"><a href="about.html">about the artist</a></p>
     </div>
     <div class="box" id="account-box">
@@ -296,6 +296,29 @@ if (track || tickerTrack) {
 
 const side = document.getElementById("left");
 if (side) buildSidebar(side);
+
+// Herr Myrden's card and about page follow his real account, so edits there show for everyone.
+async function syncOwner() {
+  try {
+    const res = await fetch("/api/users?owner=1");
+    if (!res.ok) return;
+    const { user } = await res.json();
+    if (!user) return;
+    const set = (key, fn) => document.querySelectorAll(`[data-owner="${key}"]`).forEach(fn);
+    set("photo", (n) => {
+      if (user.pfp) n.src = avatarSrc(user);
+    });
+    set("name", (n) => {
+      n.textContent = user.name;
+      n.href = "profile.html?u=" + encodeURIComponent(user.name);
+      if (COLOR_OK.test(user.color)) n.style.color = user.color;
+    });
+    set("quote", (n) => user.quote && (n.textContent = `"${user.quote}"`));
+    set("mood", (n) => user.mood && (n.textContent = user.mood));
+    set("bio", (n) => user.bio && (n.textContent = user.bio));
+  } catch {}
+}
+syncOwner();
 meReady.then(fillAccountBox);
 runCounter();
 document.querySelectorAll(".thread").forEach(initThread);

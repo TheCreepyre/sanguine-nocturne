@@ -130,18 +130,24 @@ function authForm(mode) {
 }
 
 // Shrinks the chosen picture to 128x128 and re-encodes it, so only a clean small image is uploaded.
-function resizeImage(file) {
+function resizeImage(file, size = 128, square = true) {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
     const img = new Image();
     img.onload = () => {
       URL.revokeObjectURL(url);
-      const size = 128;
       const canvas = document.createElement("canvas");
-      canvas.width = canvas.height = size;
       const ctx = canvas.getContext("2d");
-      const s = Math.min(img.width, img.height);
-      ctx.drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, size, size);
+      if (square) {
+        const s = Math.min(img.width, img.height);
+        canvas.width = canvas.height = size;
+        ctx.drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, size, size);
+      } else {
+        const scale = Math.min(1, size / Math.max(img.width, img.height));
+        canvas.width = Math.max(1, Math.round(img.width * scale));
+        canvas.height = Math.max(1, Math.round(img.height * scale));
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      }
       const tryType = (type, quality, next) =>
         canvas.toBlob((blob) => (blob && blob.type === type ? resolve(blob) : next()), type, quality);
       tryType("image/webp", 0.85, () => tryType("image/png", undefined, () => reject(new Error("can't process that image"))));
@@ -532,6 +538,97 @@ async function openConversation(otherName) {
 // ---------- forum ----------
 const link = (href, label, cls = "") => Object.assign(el("a", cls, label), { href });
 const when = (ts) => new Date(ts).toLocaleString([], { dateStyle: "short", timeStyle: "short" });
+const MEDIA_OK = /^\d{13}-[a-z0-9]{6}\.(png|jpg|webp|mp4|webm)$/;
+const YT = /(?:youtube\.com\/watch\?(?:[^\s]*&)?v=|youtu\.be\/)([\w-]{11})/;
+
+// Attachment picker: turns the chosen files into uploaded media ids at submit time.
+function mediaPicker() {
+  const wrap = el("div", "stack");
+  const file = input({ type: "file", multiple: true, accept: "image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm" });
+  const note = el("p", "dim", "up to 4 attachments: images, or mp4/webm videos up to 3 MB. for longer videos, paste a youtube link in your text.");
+  const chosen = el("p", "dim");
+  wrap.append(file, note, chosen);
+  const refresh = () => (chosen.textContent = file.files.length ? [...file.files].map((f) => f.name).join(", ") : "");
+  file.addEventListener("change", () => {
+    if (file.files.length > 4) {
+      file.value = "";
+      note.textContent = "max 4 attachments, pick again.";
+    }
+    refresh();
+  });
+  const upload = async (f) => {
+    let blob = f;
+    if (f.type.startsWith("image/")) {
+      blob = null;
+      for (const size of [1280, 900, 600]) {
+        const out = await resizeImage(f, size, false);
+        if (out.size <= 1400000) {
+          blob = out;
+          break;
+        }
+      }
+      if (!blob) throw new Error(f.name + " is too big");
+    } else if (!["video/mp4", "video/webm"].includes(f.type)) {
+      throw new Error(f.name + " isn't a supported file");
+    } else if (f.size > 3000000) {
+      throw new Error(f.name + " is over 3 MB, paste a youtube link instead");
+    }
+    const { id } = await api("media", { type: blob.type, data: await toBase64(blob) });
+    return id;
+  };
+  wrap.collect = async () => {
+    const ids = [];
+    for (const f of file.files) ids.push(await upload(f));
+    return ids;
+  };
+  wrap.reset = () => {
+    file.value = "";
+    refresh();
+  };
+  return wrap;
+}
+
+function mediaView(ids) {
+  const row = el("div", "attachments");
+  for (const id of ids || []) {
+    if (!MEDIA_OK.test(id)) continue;
+    const src = "/api/media?id=" + id;
+    if (/\.(mp4|webm)$/.test(id)) {
+      const v = el("video");
+      v.src = src;
+      v.controls = true;
+      v.preload = "metadata";
+      v.playsInline = true;
+      row.append(v);
+    } else {
+      const a = Object.assign(el("a"), { href: src, target: "_blank", rel: "noopener" });
+      const i = el("img");
+      i.src = src;
+      i.alt = "attachment";
+      i.loading = "lazy";
+      a.append(i);
+      row.append(a);
+    }
+  }
+  return row;
+}
+
+function youtubeEmbeds(text) {
+  const out = [];
+  const seen = new Set();
+  for (const m of String(text).matchAll(new RegExp(YT.source, "g"))) {
+    if (seen.has(m[1]) || seen.size >= 2) continue;
+    seen.add(m[1]);
+    const f = el("iframe", "yt");
+    f.src = "https://www.youtube-nocookie.com/embed/" + m[1];
+    f.allowFullscreen = true;
+    f.loading = "lazy";
+    f.referrerPolicy = "no-referrer";
+    f.title = "youtube video";
+    out.push(f);
+  }
+  return out;
+}
 
 async function initForum(me) {
   const b = params.get("b");
@@ -577,15 +674,18 @@ async function forumBoard(me, b) {
   const text = el("textarea");
   text.maxLength = 3000;
   text.rows = 6;
-  text.placeholder = "write your post...";
+  text.placeholder = "write your post... (paste a youtube link to embed it)";
+  const picker = mediaPicker();
   const go = el("button", "pill", "Publish");
   go.type = "submit";
-  form.append(title, text, go, msg);
+  form.append(title, text, picker, go, msg);
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     go.disabled = true;
+    msg.textContent = "publishing...";
     try {
-      const { id } = await api("forum", { action: "thread", board: b, title: title.value, text: text.value });
+      const media = await picker.collect();
+      const { id } = await api("forum", { action: "thread", board: b, title: title.value, text: text.value, media });
       location.href = `forum.html?b=${b}&t=${id}`;
     } catch (error) {
       msg.textContent = error.message;
@@ -604,7 +704,7 @@ async function forumThread(me, b, t) {
     const card = el("div", "forum-post");
     const head = el("div", "msg-head");
     head.append(nameTag(p.author, p.color, p.owner), el("span", "dim", " · " + when(p.ts)));
-    card.append(head, el("p", "msg-text", p.text));
+    card.append(head, el("p", "msg-text", p.text), mediaView(p.media), ...youtubeEmbeds(p.text));
     if (canDelete(p)) {
       card.append(button("Delete", async () => {
         if (!confirm(isThread ? "Delete this whole thread?" : "Delete this reply?")) return;
@@ -630,15 +730,18 @@ async function forumThread(me, b, t) {
   const text = el("textarea");
   text.maxLength = 2000;
   text.rows = 4;
-  text.placeholder = "write a reply...";
+  text.placeholder = "write a reply... (images, videos and youtube links work too)";
+  const picker = mediaPicker();
   const go = el("button", "pill", "Reply");
   go.type = "submit";
-  form.append(text, go, msg);
+  form.append(text, picker, go, msg);
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     go.disabled = true;
+    msg.textContent = "posting...";
     try {
-      await api("forum", { action: "reply", board: b, thread: t, text: text.value });
+      const media = await picker.collect();
+      await api("forum", { action: "reply", board: b, thread: t, text: text.value, media });
       await initForum(me);
     } catch (error) {
       msg.textContent = error.message;
