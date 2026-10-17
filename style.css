@@ -557,6 +557,57 @@ details.talk .thread { padding: 8px 10px; }
 
 .rules { margin: 0; padding-left: 18px; }
 
+/* Accounts, profiles, friends, messages */
+.stack { display: flex; flex-direction: column; gap: 8px; }
+.stack input:not([type="color"]):not([type="checkbox"]),
+.stack textarea {
+  width: 100%;
+  padding: 5px 7px;
+  border: 1px solid var(--line);
+  color: var(--text);
+  background: #000;
+  font: inherit;
+  resize: vertical;
+}
+.stack input:focus,
+.stack textarea:focus { outline: 1px solid var(--blood-bright); }
+.stack button, .member button { cursor: pointer; }
+.stack button:disabled, .member button:disabled { opacity: 0.5; cursor: wait; }
+.field { display: flex; flex-direction: column; gap: 3px; }
+.field > span:first-child { color: var(--blood-bright); font-size: 11px; }
+.inline { display: flex; align-items: center; gap: 4px; font-size: 11px; }
+input[type="color"] { width: 48px; height: 28px; padding: 0; border: 1px solid var(--line); background: #000; cursor: pointer; }
+.pill.on { background: var(--blood); }
+a.pill { text-decoration: none; }
+
+.avatar-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); gap: 4px; }
+.avatar-pick { padding: 3px; border: 1px solid var(--line); background: #0a0a0a; cursor: pointer; }
+.avatar-pick img { display: block; width: 100%; height: 42px; object-fit: contain; }
+.avatar-pick.on { border-color: var(--blood-bright); background: #1a0508; }
+
+.char-head .photo[src*="/fx-"] { object-fit: contain; background: #0a0a0a; padding: 8px; }
+.profile-name { margin: 0 0 4px; font-size: 1.3rem; }
+.user-link { font-weight: bold; text-decoration: none; }
+.user-link:hover { text-decoration: underline; }
+.posting-as { margin: 0; }
+
+.member { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-bottom: 1px dotted #333; }
+.member:last-child { border-bottom: 0; }
+.member-avatar { flex: none; width: 36px; height: 36px; object-fit: contain; background: #0a0a0a; border: 1px solid var(--line); }
+.member-info { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.member-actions { display: flex; flex-wrap: wrap; gap: 4px; }
+.member-actions .pill { margin-top: 0; }
+
+.acct-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.acct-avatar { width: 32px; height: 32px; object-fit: contain; background: #0a0a0a; border: 1px solid var(--line); }
+.acct-links { margin: 0; padding: 0; list-style: none; }
+.acct-links li { padding: 1px 0; }
+.badge { display: inline-block; min-width: 16px; padding: 0 4px; border-radius: 8px; background: var(--blood); color: #fff; font-size: 10px; text-align: center; }
+
+.dm-log { min-height: 200px; max-height: 420px; }
+.dm-log .msg.mine { text-align: right; }
+.dm-log .msg.mine .msg-text { color: var(--blood-bright); }
+
 @media (max-width: 720px) {
   #container { padding: 8px; }
 

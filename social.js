@@ -1,0 +1,438 @@
+// Account, profile, friends and messages pages. Relies on helpers from site.js.
+const app = document.getElementById("app");
+const page = document.body.dataset.page;
+const params = new URLSearchParams(location.search);
+
+async function api(path, body) {
+  const res = await fetch("/api/" + path, {
+    method: body ? "POST" : "GET",
+    credentials: "same-origin",
+    headers: body ? { "content-type": "application/json" } : undefined,
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "something went wrong");
+  return data;
+}
+
+function box(title, ...children) {
+  const b = el("div", "box");
+  if (title) b.append(el("h2", "", title));
+  b.append(...children);
+  return b;
+}
+
+function button(label, onClick, className = "pill") {
+  const b = el("button", className, label);
+  b.type = "button";
+  b.addEventListener("click", async () => {
+    b.disabled = true;
+    try {
+      await onClick();
+    } finally {
+      b.disabled = false;
+    }
+  });
+  return b;
+}
+
+function field(label, input) {
+  const wrap = el("label", "field");
+  wrap.append(el("span", "", label), input);
+  return wrap;
+}
+
+function input(attrs = {}) {
+  const i = el("input");
+  Object.assign(i, attrs);
+  return i;
+}
+
+function memberRow(u, ...actions) {
+  const row = el("div", "member");
+  const img = el("img", "member-avatar");
+  img.src = avatarSrc(u.avatar);
+  img.alt = "";
+  const info = el("div", "member-info");
+  info.append(nameTag(u.name, u.color));
+  if (u.mood) info.append(el("span", "dim", " " + u.mood));
+  const acts = el("div", "member-actions");
+  acts.append(...actions);
+  row.append(img, info, acts);
+  return row;
+}
+
+function messageLink(name) {
+  const a = el("a", "pill", "Message");
+  a.href = "messages.html?with=" + encodeURIComponent(name);
+  return a;
+}
+
+function notice() {
+  const p = el("p", "thread-status");
+  p.setAttribute("aria-live", "polite");
+  return p;
+}
+
+async function needLogin(me) {
+  if (me.user) return true;
+  app.replaceChildren(
+    box("Sign in needed", el("p", "", "you need an account for this."), Object.assign(el("a", "pill", "Sign in / Join"), { href: "account.html" }))
+  );
+  return false;
+}
+
+// ---------- account ----------
+function authForm(mode) {
+  const msg = notice();
+  const name = input({ name: "name", maxLength: 20, autocomplete: "username", required: true });
+  const pass = input({ name: "password", type: "password", autocomplete: mode === "join" ? "new-password" : "current-password", required: true, maxLength: 100 });
+  const color = input({ type: "color", value: "#ff2a2a" });
+  const form = el("form", "stack");
+  form.append(field("Username", name), field("Password", pass));
+  if (mode === "join") {
+    form.append(field("Name colour", color), el("p", "dim", "3-20 letters, numbers, _ or -. password 6+ characters. there is no email, so if you forget your password it's gone for good."));
+  }
+  const go = el("button", "pill", mode === "join" ? "Join" : "Sign in");
+  go.type = "submit";
+  form.append(go, msg);
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    go.disabled = true;
+    msg.textContent = "...";
+    try {
+      const body = { action: mode === "join" ? "register" : "login", name: name.value, password: pass.value };
+      if (mode === "join") body.color = color.value;
+      const { user } = await api("auth", body);
+      location.href = "profile.html?u=" + encodeURIComponent(user.name);
+    } catch (error) {
+      msg.textContent = error.message;
+      go.disabled = false;
+    }
+  });
+  return form;
+}
+
+function accountEditor(user) {
+  const msg = notice();
+  let avatar = user.avatar;
+  const grid = el("div", "avatar-grid");
+  for (let n = 1; n <= 23; n++) {
+    const b = el("button", "avatar-pick");
+    b.type = "button";
+    b.setAttribute("aria-label", "Avatar " + n);
+    const img = el("img");
+    img.src = avatarSrc(n);
+    img.alt = "";
+    b.append(img);
+    if (n === avatar) b.classList.add("on");
+    b.addEventListener("click", () => {
+      avatar = n;
+      grid.querySelectorAll(".on").forEach((x) => x.classList.remove("on"));
+      b.classList.add("on");
+    });
+    grid.append(b);
+  }
+  const color = input({ type: "color", value: user.color });
+  const accent = input({ type: "color", value: user.accent || "#8b0000" });
+  const noAccent = input({ type: "checkbox", checked: !user.accent });
+  const mood = input({ maxLength: 30, value: user.mood });
+  const pronouns = input({ maxLength: 30, value: user.pronouns });
+  const quote = input({ maxLength: 120, value: user.quote });
+  const bio = el("textarea");
+  bio.maxLength = 500;
+  bio.rows = 5;
+  bio.value = user.bio;
+  const accentWrap = el("div", "field");
+  const defaultLabel = el("label", "inline");
+  defaultLabel.append(noAccent, " use default");
+  accentWrap.append(el("span", "", "Profile accent colour"), accent, defaultLabel);
+
+  const form = el("form", "stack");
+  form.append(
+    el("h3", "", "Avatar"), grid,
+    field("Name colour", color), accentWrap,
+    field("Mood", mood), field("Pronouns", pronouns), field("Quote", quote), field("About me", bio)
+  );
+  const save = el("button", "pill", "Save profile");
+  save.type = "submit";
+  form.append(save, msg);
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    save.disabled = true;
+    try {
+      await api("auth", {
+        action: "update", avatar, color: color.value, accent: noAccent.checked ? "" : accent.value,
+        mood: mood.value, pronouns: pronouns.value, quote: quote.value, bio: bio.value,
+      });
+      msg.textContent = "saved.";
+    } catch (error) {
+      msg.textContent = error.message;
+    }
+    save.disabled = false;
+  });
+
+  const pwMsg = notice();
+  const cur = input({ type: "password", autocomplete: "current-password" });
+  const next = input({ type: "password", autocomplete: "new-password", maxLength: 100 });
+  const pwForm = el("form", "stack");
+  const pwGo = el("button", "pill", "Change password");
+  pwGo.type = "submit";
+  pwForm.append(field("Current password", cur), field("New password", next), pwGo, pwMsg);
+  pwForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    try {
+      await api("auth", { action: "update", password: cur.value, newPassword: next.value });
+      cur.value = next.value = "";
+      pwMsg.textContent = "password changed.";
+    } catch (error) {
+      pwMsg.textContent = error.message;
+    }
+  });
+
+  const out = button("Sign out", async () => {
+    await api("auth", { action: "logout" });
+    location.href = "index.html";
+  });
+  return [box("Edit profile", form), box("Password", pwForm), box("", out)];
+}
+
+async function initAccount(me) {
+  if (me.user) {
+    app.replaceChildren(...accountEditor(me.user));
+    return;
+  }
+  const join = params.has("join");
+  const holder = el("div");
+  const tabs = el("p", "small-links");
+  const show = (mode) => {
+    holder.replaceChildren(authForm(mode));
+    tabs.replaceChildren(
+      ...["login", "join"].map((m) => {
+        const b = el("button", "pill" + (m === mode ? " on" : ""), m === "join" ? "Join" : "Sign in");
+        b.type = "button";
+        b.addEventListener("click", () => show(m));
+        return b;
+      })
+    );
+  };
+  show(join ? "join" : "login");
+  app.replaceChildren(box("Account", tabs, holder));
+}
+
+// ---------- profile ----------
+async function initProfile(me) {
+  const wanted = params.get("u") || (me.user && me.user.name) || "";
+  if (!USER_OK.test(wanted)) {
+    app.replaceChildren(box("Profile", el("p", "", "no such person. "), Object.assign(el("a", "pill", "Find people"), { href: "friends.html" })));
+    return;
+  }
+  let data;
+  try {
+    data = await api("users?name=" + encodeURIComponent(wanted));
+  } catch (error) {
+    app.replaceChildren(box("Profile", el("p", "", error.message)));
+    return;
+  }
+  const { user, self } = data;
+  let relation = data.relation;
+  document.title = user.name + " - Sanguine Nocturne";
+
+  const head = el("div", "char-head");
+  const img = el("img", "photo");
+  img.src = avatarSrc(user.avatar);
+  img.alt = "";
+  const side = el("div");
+  const title = el("h3", "profile-name");
+  title.append(nameTag(user.name, user.color));
+  side.append(title);
+  if (user.quote) side.append(el("p", "dim", `"${user.quote}"`));
+  if (user.mood) side.append(el("p", "mood", "Mood: " + user.mood));
+  head.append(img, side);
+
+  const actions = el("div", "member-actions");
+  const msg = notice();
+  const drawActions = () => {
+    actions.replaceChildren();
+    const act = (label, action) => button(label, async () => {
+      try {
+        relation = (await api("friends", { action, to: user.name })).relation;
+        drawActions();
+      } catch (error) {
+        msg.textContent = error.message;
+      }
+    });
+    if (self) {
+      actions.append(Object.assign(el("a", "pill", "Edit profile"), { href: "account.html" }));
+    } else if (!me.user) {
+      actions.append(Object.assign(el("a", "pill", "Sign in to add friend"), { href: "account.html" }));
+    } else if (relation === "friend") {
+      actions.append(messageLink(user.name), act("Remove friend", "remove"));
+    } else if (relation === "out") {
+      actions.append(act("Request sent (cancel)", "cancel"));
+    } else if (relation === "in") {
+      actions.append(act("Accept request", "accept"), act("Decline", "decline"));
+    } else {
+      actions.append(act("Add friend", "request"));
+    }
+  };
+  drawActions();
+
+  const details = el("table", "interests");
+  const rows = [["Pronouns", user.pronouns], ["Joined", new Date(user.joined).toLocaleDateString()]];
+  for (const [k, v] of rows) {
+    if (!v) continue;
+    const tr = el("tr");
+    tr.append(el("th", "", k), el("td", "", v));
+    details.append(tr);
+  }
+
+  const main = box(user.name, head, actions, msg, el("h3", "", "About me"), el("p", "", user.bio || "nothing here yet."), details);
+  if (COLOR_OK.test(user.accent || "")) {
+    main.style.borderColor = user.accent;
+    main.querySelector("h2").style.color = user.accent;
+  }
+
+  const wall = el("div", "thread");
+  wall.dataset.thread = "user-" + user.name.toLowerCase();
+  wall.dataset.limit = "100";
+  wall.dataset.empty = "nobody has written on this wall yet.";
+  app.replaceChildren(main, box("Wall", wall));
+  initThread(wall);
+}
+
+// ---------- friends ----------
+async function initFriends(me) {
+  if (!(await needLogin(me))) return;
+  const holder = el("div");
+  const msg = notice();
+
+  async function act(action, to) {
+    try {
+      await api("friends", { action, to });
+      await draw();
+    } catch (error) {
+      msg.textContent = error.message;
+    }
+  }
+
+  async function draw() {
+    const { friends, incoming, outgoing } = await api("friends");
+    const sections = [];
+    const section = (title, list, makeActions, empty) => {
+      const b = box(title);
+      if (!list.length) b.append(el("p", "dim", empty));
+      for (const u of list) b.append(memberRow(u, ...makeActions(u)));
+      sections.push(b);
+    };
+    section("Requests", incoming, (u) => [button("Accept", () => act("accept", u.name)), button("Decline", () => act("decline", u.name))], "no requests.");
+    section("Friends", friends, (u) => [messageLink(u.name), button("Remove", () => act("remove", u.name))], "no friends yet. find someone below.");
+    if (outgoing.length) section("Sent requests", outgoing, (u) => [button("Cancel", () => act("cancel", u.name))], "");
+    holder.replaceChildren(...sections);
+  }
+
+  const results = el("div");
+  const q = input({ placeholder: "start of a username", maxLength: 20 });
+  const searchForm = el("form", "stack");
+  const go = el("button", "pill", "Search");
+  go.type = "submit";
+  searchForm.append(q, go);
+  searchForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    try {
+      const { users } = await api("users?q=" + encodeURIComponent(q.value.trim()));
+      results.replaceChildren();
+      if (!users.length) results.append(el("p", "dim", "nobody found."));
+      for (const u of users) {
+        const view = Object.assign(el("a", "pill", "View"), { href: "profile.html?u=" + encodeURIComponent(u.name) });
+        results.append(memberRow(u, view));
+      }
+    } catch (error) {
+      msg.textContent = error.message;
+    }
+  });
+
+  app.replaceChildren(holder, box("Find people", searchForm, results, msg));
+  await draw().catch((error) => (msg.textContent = error.message));
+}
+
+// ---------- messages ----------
+async function initMessages(me) {
+  if (!(await needLogin(me))) return;
+  const other = params.get("with");
+  if (other && USER_OK.test(other)) return openConversation(other);
+
+  const { conversations } = await api("dm");
+  const b = box("Messages");
+  if (!conversations.length) b.append(el("p", "dim", "no conversations yet. message one of your friends."));
+  for (const c of conversations) {
+    const open = Object.assign(el("a", "pill", c.unread ? "Open (new)" : "Open"), { href: "messages.html?with=" + encodeURIComponent(c.name) });
+    b.append(memberRow(c, open));
+  }
+  const friendsLink = Object.assign(el("a", "pill", "Friends list"), { href: "friends.html" });
+  app.replaceChildren(b, box("", friendsLink));
+}
+
+async function openConversation(otherName) {
+  const log = el("div", "thread-list dm-log");
+  const msg = notice();
+  const title = el("h2", "", "Messages");
+  const form = el("form", "thread-form");
+  const text = el("textarea");
+  text.maxLength = 1000;
+  text.rows = 2;
+  text.placeholder = "write a message...";
+  text.setAttribute("aria-label", "Message");
+  const send = el("button", "pill", "Send");
+  send.type = "submit";
+  form.append(text, send);
+  const back = Object.assign(el("a", "pill", "All messages"), { href: "messages.html" });
+  app.replaceChildren(box("", title, log, msg, form), box("", back));
+
+  let count = -1;
+  let mark = true;
+  async function load() {
+    try {
+      const data = await api("dm?with=" + encodeURIComponent(otherName) + (mark ? "&mark=1" : ""));
+      mark = false;
+      title.replaceChildren("Chat with ", nameTag(data.with.name, data.with.color));
+      form.hidden = !data.friends;
+      if (!data.friends) msg.textContent = "you're not friends any more, so you can't send messages.";
+      if (data.messages.length === count) return;
+      count = data.messages.length;
+      log.replaceChildren();
+      if (!count) log.append(el("p", "dim", "say hi."));
+      for (const m of data.messages) {
+        const row = el("div", "msg" + (m.mine ? " mine" : ""));
+        const when = new Date(m.ts).toLocaleString([], { dateStyle: "short", timeStyle: "short" });
+        row.append(el("div", "msg-head dim", (m.mine ? "you" : data.with.name) + " · " + when), el("p", "msg-text", m.text));
+        log.append(row);
+      }
+      log.scrollTop = log.scrollHeight;
+      mark = true;
+    } catch (error) {
+      msg.textContent = error.message;
+    }
+  }
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!text.value.trim()) return;
+    send.disabled = true;
+    try {
+      await api("dm", { to: otherName, text: text.value });
+      text.value = "";
+      msg.textContent = "";
+      await load();
+    } catch (error) {
+      msg.textContent = error.message;
+    }
+    send.disabled = false;
+  });
+
+  await load();
+  setInterval(() => !document.hidden && load(), 4000);
+}
+
+const PAGE_INIT = { account: initAccount, profile: initProfile, friends: initFriends, messages: initMessages };
+if (app && PAGE_INIT[page]) meReady.then((me) => PAGE_INIT[page](me));

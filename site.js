@@ -1,3 +1,62 @@
+// Who is signed in, fetched once and shared by the sidebar, comment boxes and account pages.
+const meReady = fetch("/api/auth?counts=1", { credentials: "same-origin" })
+  .then((res) => (res.ok ? res.json() : { user: null }))
+  .catch(() => ({ user: null }));
+
+const COLOR_OK = /^#[0-9a-f]{6}$/i;
+const USER_OK = /^[A-Za-z0-9_-]{3,20}$/;
+
+function avatarSrc(n) {
+  const i = Math.min(23, Math.max(1, parseInt(n, 10) || 1));
+  return "assets/fx-" + String(i).padStart(2, "0") + ([15, 18, 19].includes(i) ? ".webp" : ".png");
+}
+
+// A username link in the person's own colour.
+function nameTag(name, color) {
+  if (!USER_OK.test(name)) return el("b", "label", name);
+  const a = el("a", "user-link", name);
+  a.href = "profile.html?u=" + encodeURIComponent(name);
+  if (COLOR_OK.test(color || "")) a.style.color = color;
+  return a;
+}
+
+function fillAccountBox({ user, counts }) {
+  const body = document.getElementById("account-body");
+  if (!body) return;
+  body.replaceChildren();
+  if (!user) {
+    const row = el("p", "small-links");
+    const a = el("a", "", "Sign in");
+    a.href = "account.html";
+    const b = el("a", "", "Join");
+    b.href = "account.html?join=1";
+    row.append(a, " · ", b);
+    body.append(el("p", "dim", "no email, just a name and password."), row);
+    return;
+  }
+  const head = el("div", "acct-head");
+  const img = el("img", "acct-avatar");
+  img.src = avatarSrc(user.avatar);
+  img.alt = "";
+  head.append(img, nameTag(user.name, user.color));
+  const list = el("ul", "acct-links");
+  const links = [
+    ["profile.html?u=" + encodeURIComponent(user.name), "My profile", 0],
+    ["friends.html", "Friends", (counts && counts.requests) || 0],
+    ["messages.html", "Messages", (counts && counts.unread) || 0],
+    ["account.html", "Settings", 0],
+  ];
+  for (const [href, label, n] of links) {
+    const li = el("li");
+    const a = el("a", "", label);
+    a.href = href;
+    li.append(a);
+    if (n) li.append(" ", el("span", "badge", String(n)));
+    list.append(li);
+  }
+  body.append(head, list);
+}
+
 const PAGES = [
   ["index.html", "Home"],
   ["lore.html", "Lore"],
@@ -30,6 +89,10 @@ function buildSidebar(el) {
       </div>
       <p class="mood">Mood: <b>(tired)</b></p>
       <p class="small-links"><a href="about.html">about the artist</a></p>
+    </div>
+    <div class="box" id="account-box">
+      <h2>Account</h2>
+      <div id="account-body"><p class="dim">...</p></div>
     </div>
     <div class="box">
       <h2>Menu</h2>
@@ -112,6 +175,13 @@ function initThread(host) {
   form.append(name, text, trap, send);
   host.append(list, status, form);
 
+  // Signed-in people post under their account name instead of typing one.
+  meReady.then(({ user }) => {
+    if (!user) return;
+    name.hidden = true;
+    form.prepend(el("p", "dim posting-as", "posting as " + user.name));
+  });
+
   let lastCount = -1;
 
   function render(messages) {
@@ -121,7 +191,7 @@ function initThread(host) {
     for (const m of messages) {
       const row = el("div", "msg");
       const head = el("div", "msg-head");
-      head.append(el("b", "label", m.name));
+      head.append(m.user ? nameTag(m.user, m.color) : el("b", "label", m.name));
       const when = new Date(m.ts);
       head.append(el("span", "dim", " " + when.toLocaleString([], { dateStyle: "short", timeStyle: "short" })));
       row.append(head, el("p", "msg-text", m.text));
@@ -222,5 +292,6 @@ if (track || tickerTrack) {
 
 const side = document.getElementById("left");
 if (side) buildSidebar(side);
+meReady.then(fillAccountBox);
 runCounter();
 document.querySelectorAll(".thread").forEach(initThread);

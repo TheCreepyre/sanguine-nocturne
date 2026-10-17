@@ -1,8 +1,9 @@
-import { put, list, get } from "@vercel/blob";
+import { listBlobs, getJson, putJson } from "./_store.js";
 import { createHash } from "node:crypto";
+import { getViewer, loadUser, keyOf, USER_RE } from "./_lib.js";
 
 // Only these thread names are accepted, so nobody can create random threads.
-const THREAD_RE = /^(chat|home|about|lore-[a-z0-9-]{1,30}|art-\d{1,3}|char-[a-z0-9-]{1,30})$/;
+const THREAD_RE = /^(chat|home|about|lore-[a-z0-9-]{1,30}|art-\d{1,3}|char-[a-z0-9-]{1,30}|user-[a-z0-9_-]{3,20})$/;
 
 const MAX_NAME = 24;
 const MAX_TEXT = 500;
@@ -22,20 +23,11 @@ function respond(body, status = 200) {
 
 // One blob per message, so two people posting at once never overwrite each other.
 async function listPaths(thread) {
-  const paths = [];
-  let cursor;
-  do {
-    const page = await list({ prefix: `comments/${thread}/`, cursor, limit: 1000 });
-    for (const blob of page.blobs) paths.push(blob.pathname);
-    cursor = page.hasMore ? page.cursor : undefined;
-  } while (cursor);
-  return paths.sort();
+  return (await listBlobs(`comments/${thread}/`)).map((b) => b.pathname);
 }
 
 async function readMessage(pathname) {
-  const result = await get(pathname, { access: "private", useCache: false });
-  if (!result || result.statusCode !== 200) return null;
-  return new Response(result.stream).json();
+  return getJson(pathname);
 }
 
 async function recentMessages(thread, limit) {
@@ -44,8 +36,8 @@ async function recentMessages(thread, limit) {
   return messages.filter(Boolean);
 }
 
-function publicView({ name, text, ts }) {
-  return { name, text, ts };
+function publicView({ name, text, ts, user, color }) {
+  return user ? { name, text, ts, user, color } : { name, text, ts };
 }
 
 function clientHash(request) {
@@ -93,11 +85,24 @@ export async function POST(request) {
   // Hidden form field that real people never fill in; bots do.
   if (body.website) return respond({ ok: true });
 
-  const name =
-    String(body.name || "")
-      .replace(/[\u0000-\u001f\u007f]/g, "")
-      .trim()
-      .slice(0, MAX_NAME) || "anonymous";
+  let viewer = null;
+  let name;
+  try {
+    viewer = await getViewer(request);
+    name =
+      String(body.name || "")
+        .replace(/[\u0000-\u001f\u007f]/g, "")
+        .trim()
+        .slice(0, MAX_NAME) || "anonymous";
+    // Registered names can only be used by their owner.
+    if (viewer) name = viewer.name;
+    else if (USER_RE.test(name) && (await loadUser(keyOf(name)))) {
+      return respond({ error: "That name is registered, sign in to use it" }, 403);
+    }
+  } catch (error) {
+    console.error(error);
+    return respond({ error: "Could not post" }, 500);
+  }
   const text = String(body.text || "")
     .replace(/[\u0000-\u0009\u000b-\u001f\u007f]/g, "")
     .trim();
@@ -115,11 +120,8 @@ export async function POST(request) {
     if (repeat) return respond({ error: "You already said that" }, 429);
 
     const message = { name, text, ts: new Date(now).toISOString(), ip };
-    await put(`comments/${thread}/${message.ts}.json`, JSON.stringify(message), {
-      access: "private",
-      contentType: "application/json",
-      addRandomSuffix: true,
-    });
+    if (viewer) Object.assign(message, { user: viewer.name, color: viewer.color });
+    await putJson(`comments/${thread}/${message.ts}.json`, message, { suffix: true });
     return respond({ ok: true, message: publicView(message) });
   } catch (error) {
     console.error(error);
