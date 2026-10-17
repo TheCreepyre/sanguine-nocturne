@@ -94,6 +94,7 @@ function buildSidebar(el) {
       <p class="mood">Mood: <b data-owner="mood">(tired)</b></p>
       <p class="small-links"><a href="about.html">about the artist</a></p>
     </div>
+    <a class="forum-btn" href="forum.html">&#10016; Forum &mdash; make a post</a>
     <div class="box" id="account-box">
       <h2>Account</h2>
       <div id="account-body"><p class="dim">...</p></div>
